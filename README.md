@@ -10,9 +10,10 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 (setup), Phase 1 (dataset inspection), and Phase 2
-(brand selection) complete. Later sections of this README (results,
-reproduction steps) will be filled in as each phase lands — see
+**Status:** Phase 0 (setup), Phase 1 (dataset inspection), Phase 2 (brand
+selection), and Phase 3 (cleaning/conversation reconstruction) complete.
+Later sections of this README (results, reproduction steps) will be filled
+in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -111,6 +112,42 @@ at once) and writes:
 See `docs/brand_shortlist.md` for the resulting shortlist of 5 candidate
 brands with supporting evidence (Phase 1 deliverable — brand *selection*
 happens in Phase 2).
+
+Once inspected, build the cleaned, reconstructed support-case dataset for
+the selected brand (SpotifyCares):
+
+```bash
+python -m scripts.build_processed_dataset
+```
+
+This does exact conversation-thread reconstruction (id-graph traversal, not
+regex mentions) restricted to SpotifyCares' ~92k relevant tweets, and writes:
+
+- `data/processed/support_cases.jsonl` — all 43,203 normalized support cases (gitignored — regenerate with the command above)
+- `data/processed/support_cases_sample.jsonl` — 50 random cases, human-inspectable, committed
+- `data/processed/preprocessing_stats.json` — cleaning/filtering counts, multi-turn rate, knowledge/golden_pool split sizes
+
+Each case looks like:
+
+```json
+{
+  "case_id": "case_1277353",
+  "conversation_id": "conv_1277350",
+  "brand": "SpotifyCares",
+  "customer_message": "...",
+  "brand_response": "...",
+  "context": [{"speaker": "customer", "text": "...", "tweet_id": 1277350}, ...],
+  "customer_tweet_id": 1277349,
+  "brand_tweet_id": 1277353,
+  "source_ids": [1277350, 1277348, 1277349, 1277351, 1277352, 1277353],
+  "split": "knowledge"
+}
+```
+
+`split` is `"knowledge"` (used for the retrieval index / classifier
+training) or `"golden_pool"` (held out entirely — Phase 5 samples the
+manually-labelled golden evaluation set only from this pool, so it never
+leaks into the system being evaluated).
 
 ## Running tests
 

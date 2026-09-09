@@ -1,0 +1,21 @@
+{
+  "brand": "SpotifyCares",
+  "raw_rows_fetched_for_brand_threads": 91849,
+  "rows_dropped_unusable_text": 0,
+  "rows_dropped_duplicate": 0,
+  "rows_after_cleaning": 91849,
+  "brand_reply_candidates": 43243,
+  "cases_built": 43203,
+  "cases_dropped_no_customer_ancestor": 40,
+  "multi_turn_cases": 16164,
+  "single_turn_cases": 27039,
+  "cases_sharing_a_customer_tweet_with_another_case": 3188,
+  "pct_cases_sharing_a_customer_tweet": 7.38,
+  "pct_brand_replies_usable_as_cases": 99.91,
+  "split_counts": {
+    "knowledge": 36723,
+    "golden_pool": 6480
+  },
+  "golden_pool_fraction_target": 0.15,
+  "random_seed": 42
+}

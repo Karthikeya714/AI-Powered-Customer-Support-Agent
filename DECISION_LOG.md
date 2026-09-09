@@ -170,3 +170,86 @@ multi-category retailer's — acceptable since the assignment explicitly asks
 for a justified subset, not maximum scale. Per the Phase 2 instruction, this
 brand will not be changed unless a serious data problem surfaces during
 later phases.
+
+## 2026-09-09 — Exact thread reconstruction via a lightweight full-dataset id graph
+
+**Decision:** `src/data/conversation_builder.py` builds a `TweetGraph` from
+the full 2.8M-row dataset, but only 5 light columns (no `text`): a chunked
+read is concatenated into id→author/inbound/parent/children dicts. BFS out
+from every SpotifyCares-authored tweet collects the exact set of tweet ids
+in those threads (capped at 200 nodes / 15 hops per thread as a safety
+valve — 59 of 43,265 threads hit this cap). A second chunked pass then
+fetches full rows (with text) for only that ~92k-id subset.
+
+**Reason:** Phase 1's mention-regex approach was a fine approximation for
+*ranking* brands, but is not good enough for *reconstructing* threads:
+sampling showed a customer's own thread-opening tweet often doesn't
+@-mention the brand at all (e.g. "Spotify keeps crashing my PC any
+suggestions lads?", only reachable by following `in_response_to_tweet_id`).
+Exact graph traversal is required for correctness here.
+
+**Alternatives considered:** Holding full text for all 2.8M rows in memory
+to avoid a second pass — rejected as unnecessary memory cost when only
+~92k of 2.8M rows are ever needed; the light-columns-first design keeps
+peak memory to a small fraction of the full dataset while still giving
+exact (not approximate) reconstruction.
+
+**Trade-off:** Two full file reads instead of one (~15s combined) for the
+light index and the targeted fetch. Acceptable for a script that runs
+rarely (whenever the processed dataset needs rebuilding).
+
+## 2026-09-09 — One support case per brand reply tweet, walking past multi-part replies
+
+**Decision:** Every `SpotifyCares` reply tweet that resolves to a customer
+ancestor becomes its own case (`case_id = case_{tweet_id}`). When resolving
+the customer ancestor, any brand-authored tweets in between (e.g. a
+numbered "(1/2)" then "(2/2)" reply) are walked past and recorded in
+`source_ids` for traceability, not merged into one case.
+
+**Reason:** Merging multi-part replies into a single case would require
+guessing which brand tweets belong together (no explicit grouping field
+exists), adding real complexity for a modest fraction of cases. Keeping
+one case per brand reply is simple, matches Phase 3's "prefer simple
+implementations" guidance, and both parts still end up in the case pool as
+independently useful (customer_message, brand_response) evidence pairs.
+
+**Alternatives considered:** Concatenating consecutive same-thread brand
+replies into one `brand_response` — deferred; would help grounding slightly
+for split replies but adds real complexity for uncertain benefit.
+
+**Trade-off:** A customer message can be the `customer_message` of more
+than one case (each with a different, partial `brand_response`). Measured
+at 7.38% of cases sharing a `customer_tweet_id` with another case (see next
+entry — this also captures a smaller, separate data-quality issue, not only
+legitimate multi-part replies).
+
+## 2026-09-09 — Known limitation: some in_response_to_tweet_id links are semantically incoherent
+
+**Finding (not a bug):** Spot-checking `support_cases_sample.jsonl` found
+case `case_1184204`, whose `brand_response` ("...your full payment card
+info...") does not match its `customer_message` ("booooooo. You're ignoring
+me."). Tracing the raw rows showed the customer tweet's `response_tweet_id`
+lists **two** children (`1184204,1184206`) — SpotifyCares' numbered "2. ..."
+reply is threaded to a customer tweet it doesn't actually answer, most
+likely a scraping/threading artifact in the original dataset, not a defect
+in `build_cases`' graph traversal (confirmed by reading the raw CSV rows
+directly around this id).
+
+**Decision:** Do not attempt to detect or repair semantically-incoherent
+thread links in Phase 3. `pct_cases_sharing_a_customer_tweet` (7.38%,
+`data/processed/preprocessing_stats.json`) is reported as an upper-bound
+proxy for this phenomenon (it also includes legitimate multi-part replies,
+which look the same structurally), and this finding is carried forward for
+Phase 15 (failure analysis) and Phase 16 ("what is misleading about my
+headline number") rather than papered over now.
+
+**Reason:** Detecting this reliably needs semantic judgment (does the reply
+text actually address the customer text?), which is exactly what later
+phases (retrieval relevance, LLM-judge groundedness scoring) are built to
+evaluate. Building an ad-hoc heuristic filter in the cleaning step would be
+guessing, and could silently discard legitimate cases.
+
+**Trade-off:** A small fraction of `support_cases.jsonl` records are
+structurally valid (correct graph traversal of the source data) but
+semantically wrong. This is a known, quantified limitation, not a hidden
+one — it should be mentioned in the final report's limitations section.
