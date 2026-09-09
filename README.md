@@ -10,10 +10,9 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 (setup), Phase 1 (dataset inspection), Phase 2 (brand
-selection), Phase 3 (cleaning/conversation reconstruction), and Phase 4
-(intent discovery) complete. Later sections of this README (results,
-reproduction steps) will be filled in as each phase lands — see
+**Status:** Phase 0 (setup) through Phase 5 (golden evaluation set)
+complete. Later sections of this README (results, reproduction steps)
+will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -165,6 +164,20 @@ applies the taxonomy's cluster→intent mapping to produce
 `data/processed/support_cases_with_intents.jsonl` (weak labels, gitignored
 — regenerate with the command above) and
 `data/processed/intent_distribution.json`.
+
+Finally, build the golden evaluation set — 229 manually labeled examples
+sampled exclusively from `golden_pool` (never touched by the steps above):
+
+```bash
+python -m scripts.sample_golden_candidates   # stratified candidate sampling from golden_pool
+python -m scripts.build_golden_set           # merge with manual labels -> golden_set.jsonl / .csv
+```
+
+`data/golden/golden_set.jsonl` is the ground truth the whole system will
+eventually be scored against (intent classification, retrieval, generation,
+and escalation). See `docs/golden_set_methodology.md` for the full sampling
+strategy, the escalation-action rubric applied while labeling, and the
+blind self-consistency check.
 
 ## Running tests
 

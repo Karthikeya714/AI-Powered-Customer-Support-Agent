@@ -337,3 +337,93 @@ shortage. The discarded half is a real property of this dataset (a lot of
 Twitter replies to a support account are generic/off-topic chatter, not
 clean single-issue reports) worth stating plainly rather than hiding
 behind a forced 100%-coverage labeling.
+
+## 2026-09-09 — Golden set sampling uses transform-only clustering + keyword search, never re-fits on golden_pool
+
+**Decision:** To stratify the 293 golden candidates across all 12 intents,
+`scripts/sample_golden_candidates.py` re-fits the identical Phase 4
+TF-IDF+KMeans model on `knowledge`-split data (same params/seed, so the
+clusters are bit-for-bit identical), then only calls `.transform()`/
+`.predict()` on `golden_pool` messages — never `.fit()`. The 3 intents with
+no dedicated cluster get candidates via a separate keyword/regex search
+over `golden_pool` text instead.
+
+**Reason:** Phase 5 needs `golden_pool` messages roughly bucketed by
+likely intent so sampling can guarantee coverage of rare intents — but
+`golden_pool` must never influence how any model is *fit*, per the
+project's core leakage rule. Transform-only projection through an
+already-frozen model is a read operation, not a fit; it cannot leak
+information back into the model.
+
+**Alternatives considered:** Pure random sampling with no stratification —
+rejected, since Phase 5 explicitly requires including rare-but-important
+intents, and 3 of the 12 intents have zero representation in the automated
+clustering signal at all (see the Phase 4 entry above), so pure random
+sampling from 6,480 cases would likely surface very few or zero examples
+of `account_security_compromise`, `account_data_loss`, and
+`cancellation_or_refund_request`.
+
+**Trade-off:** None significant — the hint is explicitly documented as a
+sampling aid only; every candidate was still read and independently
+labeled by hand (see `docs/golden_set_methodology.md`), and about a third
+of hints turned out to be wrong on inspection, which is expected and fine
+given the hint's only job is getting a diverse pool of messages in front
+of a human, not producing correct labels itself.
+
+## 2026-09-09 — Golden action labels follow a documented rubric, not a per-system output
+
+**Decision:** `gold_action` (AUTO_HANDLE/ESCALATE) was assigned by
+applying the plan's stated escalation principles (Phase 11: fraud,
+payment disputes, repeated/unresolved issues, low-confidence/ambiguous
+cases, high-risk categories) directly to each message's content and
+context — not derived from any classifier or heuristic score, since no
+escalation engine exists yet at this point in the project. Two refinements
+were applied consistently rather than left to case-by-case judgment: (1)
+within `account_data_loss`, lost downloaded/offline songs (a
+well-precedented, reliably-fixable pattern in the historical data) were
+auto-handled on first occurrence while lost playlists/whole-library data
+were always escalated; (2) every non-English message was escalated,
+regardless of its apparent severity, since the retrieval/generation
+pipeline is grounded in English historical evidence.
+
+**Reason:** These labels are the ground truth Phase 11's actual escalation
+engine will later be evaluated against — they have to come from first
+principles, not from a system that doesn't exist yet, or the evaluation
+would be circular. The two consistency refinements exist so the golden
+set doesn't quietly depend on ad-hoc per-message judgment calls that would
+be impossible to explain or reproduce.
+
+**Alternatives considered:** Judging every non-English message purely on
+its content's apparent severity (escalating only the severe ones) —
+rejected for simplicity and consistency: correctly judging severity in a
+message you can only partially read is itself an argument for escalating,
+not a reason to skip it.
+
+**Trade-off:** The non-English-always-escalates rule is deliberately
+conservative and will escalate some genuinely low-stakes non-English
+messages (e.g. a mild feature request) — accepted as a simplicity/safety
+trade-off, and stated explicitly rather than left implicit.
+
+## 2026-09-09 — Label consistency checked via blind self-review, not a second human
+
+**Decision:** Since no second human labeler is available in this
+environment, label consistency was checked by blindly re-labeling 25
+random golden examples (message text only, original labels hidden) and
+comparing against the saved labels: 25/25 (100%) agreement on both intent
+and action (`data/golden/consistency_check_results.json`).
+
+**Reason:** The plan calls for a second-human consistency check "if
+possible" — it isn't possible here, so the closest honest substitute is a
+blind self-consistency check, explicitly documented as measuring rubric
+*consistency* (same annotator, same rules, reapplied blind) rather than
+label *correctness*, which only independent review could establish.
+
+**Alternatives considered:** Skipping the check entirely — rejected, since
+even a self-consistency check catches careless/contradictory labeling,
+which is a real failure mode worth ruling out.
+
+**Trade-off:** 100% agreement is a weaker signal than genuine
+inter-annotator agreement would be (it can't catch a systematic bias the
+one annotator holds throughout). This is stated plainly in
+`docs/golden_set_methodology.md` rather than presented as equivalent to
+real human validation.

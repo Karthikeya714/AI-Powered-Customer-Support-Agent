@@ -1,0 +1,8 @@
+{
+  "method": "blind self-consistency check (not independent second-human review -- see docs/golden_set_methodology.md for why)",
+  "sample_size": 25,
+  "sample_seed": 123,
+  "intent_agreement": "25/25 (100.0%)",
+  "action_agreement": "25/25 (100.0%)",
+  "disagreements": []
+}
