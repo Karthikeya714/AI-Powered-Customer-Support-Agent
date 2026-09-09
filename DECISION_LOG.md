@@ -478,3 +478,36 @@ reply, and escalation metrics, running the full agent end-to-end).
 
 **Trade-off:** None — this is exactly the kind of shared utility the
 "keep functions small and testable" project guideline calls for.
+
+## 2026-09-09 — TF-IDF baseline uses class_weight="balanced"
+
+**Decision:** `baselines/tfidf_classifier.py`'s `LogisticRegression` uses
+`class_weight="balanced"`, and the regularization strength `C` is chosen
+from `{0.1, 1.0, 10.0}` by validation macro F1 (not accuracy).
+
+**Reason:** The training distribution is severely imbalanced
+(`playback_technical_issue` is ~41% of weakly-labeled data,
+`customer_service_feedback` ~1%). An unweighted model would mostly relearn
+majority-class behavior and this baseline would stop being a meaningful
+midpoint between the majority baseline and the AI classifier. Selecting
+`C` by macro F1 (not accuracy) keeps the tuning objective consistent with
+what actually matters for this project — per-intent performance, not just
+overall correctness, matching the "macro F1 matters because accuracy can
+hide poor performance on minority intents" principle from the architecture
+doc.
+
+**Alternatives considered:** A full grid search over TF-IDF parameters too
+(max_features, ngram_range) — rejected for Phase 7 as unnecessary
+complexity; a single reasonable fixed TF-IDF config plus a small,
+explainable `C` sweep is enough to demonstrate the pipeline and stays
+within "prefer simple implementations that can be explained in an
+interview."
+
+**Trade-off:** Validation macro F1 (0.72) is noticeably higher than golden
+macro F1 (0.51) — expected, since validation is drawn from the same
+weakly-labeled, noisier distribution as training (no manual verification,
+no deliberately-included hard cases, and it never contains the 3
+intents that got zero weak-label coverage). This gap itself is a useful
+data point for Phase 16 ("what is misleading about my headline number"):
+the validation score alone would overstate how well this baseline
+actually performs.

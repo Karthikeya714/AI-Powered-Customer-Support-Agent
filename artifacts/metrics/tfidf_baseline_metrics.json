@@ -1,0 +1,267 @@
+{
+  "accuracy": 0.5676855895196506,
+  "macro_f1": 0.5107458393960941,
+  "per_intent": {
+    "account_access_issue": {
+      "precision": 0.4222222222222222,
+      "recall": 0.95,
+      "f1": 0.5846153846153846,
+      "support": 20
+    },
+    "account_data_loss": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 16
+    },
+    "account_security_compromise": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 19
+    },
+    "acknowledgment_closing": {
+      "precision": 0.5,
+      "recall": 0.6666666666666666,
+      "f1": 0.5714285714285714,
+      "support": 15
+    },
+    "billing_subscription_issue": {
+      "precision": 0.47368421052631576,
+      "recall": 0.75,
+      "f1": 0.5806451612903226,
+      "support": 24
+    },
+    "cancellation_or_refund_request": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 17
+    },
+    "customer_service_feedback": {
+      "precision": 0.6666666666666666,
+      "recall": 0.6666666666666666,
+      "f1": 0.6666666666666666,
+      "support": 15
+    },
+    "dm_followup": {
+      "precision": 0.8666666666666667,
+      "recall": 1.0,
+      "f1": 0.9285714285714286,
+      "support": 13
+    },
+    "family_plan_issue": {
+      "precision": 0.8888888888888888,
+      "recall": 0.8888888888888888,
+      "f1": 0.8888888888888888,
+      "support": 18
+    },
+    "feature_request_or_missing_content": {
+      "precision": 0.8333333333333334,
+      "recall": 0.38461538461538464,
+      "f1": 0.5263157894736842,
+      "support": 26
+    },
+    "playback_technical_issue": {
+      "precision": 0.3673469387755102,
+      "recall": 0.6428571428571429,
+      "f1": 0.4675324675324675,
+      "support": 28
+    },
+    "student_discount_issue": {
+      "precision": 0.9411764705882353,
+      "recall": 0.8888888888888888,
+      "f1": 0.9142857142857143,
+      "support": 18
+    }
+  },
+  "confusion_matrix": {
+    "account_access_issue": {
+      "account_access_issue": 19,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 0,
+      "billing_subscription_issue": 1,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 0,
+      "dm_followup": 0,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 0,
+      "student_discount_issue": 0
+    },
+    "account_data_loss": {
+      "account_access_issue": 2,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 1,
+      "billing_subscription_issue": 1,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 0,
+      "dm_followup": 0,
+      "family_plan_issue": 1,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 11,
+      "student_discount_issue": 0
+    },
+    "account_security_compromise": {
+      "account_access_issue": 12,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 1,
+      "billing_subscription_issue": 6,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 0,
+      "dm_followup": 0,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 0,
+      "student_discount_issue": 0
+    },
+    "acknowledgment_closing": {
+      "account_access_issue": 2,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 10,
+      "billing_subscription_issue": 0,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 2,
+      "dm_followup": 0,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 1,
+      "student_discount_issue": 0
+    },
+    "billing_subscription_issue": {
+      "account_access_issue": 1,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 1,
+      "billing_subscription_issue": 18,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 1,
+      "dm_followup": 0,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 3,
+      "student_discount_issue": 0
+    },
+    "cancellation_or_refund_request": {
+      "account_access_issue": 5,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 1,
+      "billing_subscription_issue": 2,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 1,
+      "dm_followup": 0,
+      "family_plan_issue": 1,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 6,
+      "student_discount_issue": 1
+    },
+    "customer_service_feedback": {
+      "account_access_issue": 1,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 0,
+      "billing_subscription_issue": 1,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 10,
+      "dm_followup": 2,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 1,
+      "student_discount_issue": 0
+    },
+    "dm_followup": {
+      "account_access_issue": 0,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 0,
+      "billing_subscription_issue": 0,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 0,
+      "dm_followup": 13,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 0,
+      "student_discount_issue": 0
+    },
+    "family_plan_issue": {
+      "account_access_issue": 0,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 0,
+      "billing_subscription_issue": 1,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 0,
+      "dm_followup": 0,
+      "family_plan_issue": 16,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 1,
+      "student_discount_issue": 0
+    },
+    "feature_request_or_missing_content": {
+      "account_access_issue": 2,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 1,
+      "billing_subscription_issue": 4,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 1,
+      "dm_followup": 0,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 10,
+      "playback_technical_issue": 8,
+      "student_discount_issue": 0
+    },
+    "playback_technical_issue": {
+      "account_access_issue": 0,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 5,
+      "billing_subscription_issue": 3,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 0,
+      "dm_followup": 0,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 2,
+      "playback_technical_issue": 18,
+      "student_discount_issue": 0
+    },
+    "student_discount_issue": {
+      "account_access_issue": 1,
+      "account_data_loss": 0,
+      "account_security_compromise": 0,
+      "acknowledgment_closing": 0,
+      "billing_subscription_issue": 1,
+      "cancellation_or_refund_request": 0,
+      "customer_service_feedback": 0,
+      "dm_followup": 0,
+      "family_plan_issue": 0,
+      "feature_request_or_missing_content": 0,
+      "playback_technical_issue": 0,
+      "student_discount_issue": 16
+    }
+  },
+  "labels": [
+    "account_access_issue",
+    "account_data_loss",
+    "account_security_compromise",
+    "acknowledgment_closing",
+    "billing_subscription_issue",
+    "cancellation_or_refund_request",
+    "customer_service_feedback",
+    "dm_followup",
+    "family_plan_issue",
+    "feature_request_or_missing_content",
+    "playback_technical_issue",
+    "student_discount_issue"
+  ],
+  "selected_C": 10.0,
+  "validation_macro_f1": 0.7198330903687985,
+  "n_train": 15385,
+  "n_validation": 2715,
+  "n_golden": 229
+}

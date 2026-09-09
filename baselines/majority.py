@@ -15,7 +15,7 @@ import json
 
 from src.config import get_logger, settings
 from src.intents.labels import INTENTS
-from evaluation.evaluate_intents import compute_intent_metrics
+from evaluation.evaluate_intents import compute_intent_metrics, plot_confusion_matrix
 
 logger = get_logger(__name__)
 
@@ -67,6 +67,10 @@ def main() -> None:
     metrics_path = artifacts_metrics / "majority_baseline_metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     logger.info("Wrote %s", metrics_path)
+
+    plot_path = settings.project_root / "artifacts" / "plots" / "majority_baseline_confusion_matrix.png"
+    plot_confusion_matrix(metrics, plot_path, title="Majority baseline")
+    logger.info("Wrote %s", plot_path)
 
     print(f"\n=== MAJORITY BASELINE ({len(golden_records)} golden examples) ===")
     print(f"Majority class: {majority_intent}")

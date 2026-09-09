@@ -10,9 +10,9 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 (setup) through Phase 6 (majority-class baseline)
-complete. Later sections of this README (results, reproduction steps)
-will be filled in as each phase lands — see
+**Status:** Phase 0 (setup) through Phase 7 (TF-IDF + Logistic Regression
+baseline) complete. Later sections of this README (results, reproduction
+steps) will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -198,6 +198,24 @@ golden set itself) for every golden example. Writes
 golden set was built to not over-represent the majority class (see
 `docs/golden_set_methodology.md`). This is the floor later
 classifiers are compared against.
+
+Then the TF-IDF + Logistic Regression baseline — trained only on the
+Phase 4 weak-labeled knowledge data, with a validation split (also
+non-golden) used to pick the regularization strength `C`:
+
+```bash
+python -m baselines.tfidf_classifier
+```
+
+**Result: 56.8% accuracy, 0.511 macro F1** — a large jump over the
+majority baseline, but per-intent F1 is exactly 0 for the 3 intents with
+no weak-label training coverage (`account_data_loss`,
+`account_security_compromise`, `cancellation_or_refund_request` — see
+Phase 4's decision log). The confusion matrix
+(`artifacts/plots/tfidf_baseline_confusion_matrix.png`) shows those 3
+intents' true examples mostly fall back to `account_access_issue` — the
+closest available trained category. Writes the same predictions/metrics/
+confusion-matrix-plot artifact triad as the majority baseline.
 
 ## Running tests
 
