@@ -107,7 +107,7 @@ def main() -> None:
         "random_seed": settings.random_seed,
     }
     stats_path = settings.data_processed_dir / "preprocessing_stats.json"
-    stats_path.write_text(json.dumps(stats, indent=2))
+    stats_path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
     logger.info("Wrote %s", stats_path)
 
     print("\n=== PREPROCESSING SUMMARY ===")

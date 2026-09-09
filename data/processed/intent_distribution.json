@@ -1,0 +1,15 @@
+{
+  "total_labeled": 18100,
+  "total_discarded_as_noise": 18623,
+  "intent_counts": {
+    "playback_technical_issue": 7490,
+    "billing_subscription_issue": 2919,
+    "account_access_issue": 2252,
+    "feature_request_or_missing_content": 1714,
+    "acknowledgment_closing": 1161,
+    "family_plan_issue": 1024,
+    "student_discount_issue": 894,
+    "dm_followup": 420,
+    "customer_service_feedback": 226
+  }
+}

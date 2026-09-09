@@ -253,3 +253,87 @@ guessing, and could silently discard legitimate cases.
 structurally valid (correct graph traversal of the source data) but
 semantically wrong. This is a known, quantified limitation, not a hidden
 one — it should be mentioned in the final report's limitations section.
+
+## 2026-09-09 — Intent discovery via TF-IDF+KMeans clustering, not an LLM
+
+**Decision:** `src/intents/discovery.py` uses TF-IDF (5000 features,
+unigrams+bigrams, `min_df=5`) + KMeans (k=30, fixed seed) over the
+knowledge-split customer messages to surface candidate themes, rather than
+asking an LLM to propose/cluster intents.
+
+**Reason:** `LLM_API_KEY` is not configured for this project. Clustering
+is also fully deterministic and free to re-run, and — usefully — the same
+TF-IDF machinery gets reused for the Phase 7 TF-IDF+LogisticRegression
+baseline, so this isn't throwaway infrastructure.
+
+**Alternatives considered:** Manually skimming a random sample of
+messages with no clustering assistance — would work but is much slower
+and more subjective for finding 30 candidate themes across 36,723
+messages; clustering gives a structured starting point that a human then
+merges/prunes (exactly what the plan's "use clustering/LLM analysis only
+as assistance" instruction asks for).
+
+**Trade-off:** TF-IDF clusters group by lexical similarity (shared words),
+not semantic issue-type — e.g. iOS/Android/desktop technical complaints
+formed separate clusters purely because of device-name vocabulary, and had
+to be manually merged into one `playback_technical_issue` intent. An
+LLM-assisted discovery pass might group by meaning more directly; this is
+worth revisiting if `LLM_API_KEY` becomes available.
+
+## 2026-09-09 — 12 intents; 3 have no automated weak-label coverage
+
+**Decision:** Final taxonomy (`src/intents/labels.py`, reasoning in
+`docs/intent_definitions.md`) has 12 intents. 9 are backed by one or more
+of the 30 discovery clusters and get weak labels for Phase 7 training
+(18,100 of 36,723 knowledge messages, 49%). 3 — `account_security_compromise`,
+`account_data_loss`, `cancellation_or_refund_request` — are grounded in
+real examples that appeared *inside* other clusters' example lists but
+never dominated a cluster of their own at k=30, so they get zero automated
+weak-label coverage; they still exist for manual golden-set labeling
+(Phase 5) and the LLM classifier (Phase 8).
+
+**Reason:** These 3 are exactly the kind of high-risk, escalation-relevant
+categories the assignment calls out (potential fraud, data loss, explicit
+cancel/refund requests) — dropping them for lack of a clean cluster would
+mean the taxonomy under-represents the cases where correct escalation
+behavior matters most. Forcing them onto an unrelated cluster instead
+(just to get weak-label coverage) would inject label noise elsewhere.
+
+**Alternatives considered:** A supplementary keyword-regex pass (e.g.
+"hack", "compromised", "cancel", "refund") to weakly-label these 3 intents
+too — deferred; if Phase 7's baseline needs better coverage of them it can
+be added then, scoped to that phase rather than Phase 4.
+
+**Trade-off:** The Phase 7 TF-IDF+LogisticRegression baseline will have
+zero training signal for these 3 intents and is expected to never predict
+them — an explicit, documented limitation (and a natural input to Phase 16
+"what is misleading about my headline number?"), not an oversight.
+
+## 2026-09-09 — Roughly half of knowledge messages discarded as clustering noise
+
+**Decision:** 7 of 30 discovery clusters (18,623 of 36,723 knowledge
+messages, ~51%) are mapped to `None` in `CLUSTER_TO_INTENT` — discarded
+from the weak-labeled training set rather than assigned to the
+closest-seeming intent.
+
+**Reason:** These clusters' top TF-IDF terms were generic, dataset-wide
+vocabulary ("spotify", "https", "help", "don't") rather than a specific
+topic, and their sampled example messages span clearly unrelated subjects
+(a technical complaint next to a thank-you next to a feature idea). This
+includes the single largest cluster (10,003 messages, 27% of the knowledge
+split) — its size comes from being a catch-all for messages without a
+strong distinguishing topic, not from being one coherent intent.
+
+**Alternatives considered:** Assigning the largest generic cluster to
+`playback_technical_issue` anyway, since a visible chunk of its examples
+were technical — rejected: spot-checking showed real mixed content (ads
+complaints, artist-attribution requests, thank-yous), and forcing the
+label would measurably dilute that intent's training-data precision for
+uncertain benefit.
+
+**Trade-off:** Only 49% of the knowledge pool ends up with a weak label —
+still 18,100 examples, far more than Phase 7 needs, so no practical
+shortage. The discarded half is a real property of this dataset (a lot of
+Twitter replies to a support account are generic/off-topic chatter, not
+clean single-issue reports) worth stating plainly rather than hiding
+behind a forced 100%-coverage labeling.

@@ -257,7 +257,7 @@ def main() -> None:
         "monthly_tweet_counts": pass_b["month_histogram"],
     }
     summary_path = settings.data_processed_dir / "dataset_summary.json"
-    summary_path.write_text(json.dumps(summary, indent=2))
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
     logger.info("Wrote %s", summary_path)
 
     convo_text = sample_conversations(pass_b["buffered_rows"], shortlist_handles[:8], N_SAMPLE_CONVERSATIONS_PER_BRAND)

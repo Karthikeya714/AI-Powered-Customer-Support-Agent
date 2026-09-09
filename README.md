@@ -11,9 +11,9 @@ trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
 **Status:** Phase 0 (setup), Phase 1 (dataset inspection), Phase 2 (brand
-selection), and Phase 3 (cleaning/conversation reconstruction) complete.
-Later sections of this README (results, reproduction steps) will be filled
-in as each phase lands — see
+selection), Phase 3 (cleaning/conversation reconstruction), and Phase 4
+(intent discovery) complete. Later sections of this README (results,
+reproduction steps) will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -148,6 +148,23 @@ Each case looks like:
 training) or `"golden_pool"` (held out entirely — Phase 5 samples the
 manually-labelled golden evaluation set only from this pool, so it never
 leaks into the system being evaluated).
+
+Next, discover intent themes and (once the taxonomy is defined) weakly
+label the knowledge pool for baseline training:
+
+```bash
+python -m scripts.build_intent_dataset
+```
+
+This TF-IDF+KMeans-clusters the knowledge-split customer messages (no LLM
+call — no API key is required for this step) and writes
+`data/processed/intent_discovery_clusters.json`. The 12-intent taxonomy
+derived from reading that report lives in `src/intents/labels.py`, with
+full reasoning in `docs/intent_definitions.md`. Re-running the script
+applies the taxonomy's cluster→intent mapping to produce
+`data/processed/support_cases_with_intents.jsonl` (weak labels, gitignored
+— regenerate with the command above) and
+`data/processed/intent_distribution.json`.
 
 ## Running tests
 

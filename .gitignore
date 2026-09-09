@@ -19,9 +19,11 @@ data/raw/*
 
 # Large derived datasets (rebuilt by scripts/*, sizes track the raw data).
 # Small analysis/inspection reports (brand_statistics.csv, dataset_summary.json,
-# preprocessing_stats.json, support_cases_sample.jsonl) are intentionally NOT
-# excluded here since they're cheap and are the deliverable evidence.
+# preprocessing_stats.json, support_cases_sample.jsonl, intent_discovery_clusters.json,
+# intent_distribution.json) are intentionally NOT excluded here since they're
+# cheap and are the deliverable evidence.
 data/processed/support_cases.jsonl
+data/processed/support_cases_with_intents.jsonl
 
 # Vector indexes and model artifacts (rebuildable, can be large)
 *.faiss
