@@ -1,0 +1,1150 @@
+HIVER SDE INTERN TAKE-HOME ASSIGNMENT
+IMPLEMENTATION PLAN FOR CLAUDE CODE
+====================================
+
+PROJECT GOAL
+------------
+Build a brand-specific AI customer-support agent using the Customer Support on Twitter
+dataset.
+
+For a new customer message, the system must:
+1. Identify the customer's intent.
+2. Retrieve similar historical support conversations.
+3. Draft a reply grounded in those historical cases.
+4. Decide AUTO_HANDLE vs ESCALATE.
+5. Give a reason for the escalation/handling decision.
+6. Prove the system works using a manually labelled golden evaluation set,
+   baselines, automated metrics, and an LLM-as-judge validated against humans.
+
+IMPORTANT
+---------
+- Do NOT train an LLM from scratch.
+- The historical Twitter conversations are primarily used as support knowledge/evidence.
+- Build the project incrementally. Do not implement everything at once.
+- Keep every component understandable because the candidate must explain and modify
+  the code live.
+- Prefer simple, reproducible solutions over unnecessary complexity.
+- Do not use the full ~3M tweet dataset for every experiment. Use a justified subset.
+- Keep the golden evaluation set isolated from the data used to build/tune the system.
+- Every major decision should be recorded in DECISION_LOG.md.
+
+FINAL HIGH-LEVEL PIPELINE
+-------------------------
+Customer Message
+       |
+       v
+Preprocessing
+       |
+       v
+Intent Classification
+       |
+       v
+Retrieve Similar Historical Cases
+       |
+       v
+Grounded Reply Generation
+       |
+       v
+Escalation / Auto-Handle Decision
+       |
+       +------------------+
+       |                  |
+       v                  v
+AUTO_HANDLE           ESCALATE
+       |                  |
+       v                  v
+Draft Reply          Human Agent
+
+
+PHASE 0 — PROJECT SETUP
+=======================
+
+OBJECTIVE
+---------
+Create a clean, reproducible Python project before implementing the AI.
+
+TASKS
+-----
+1. Create the repository structure.
+2. Create a Python virtual environment.
+3. Add requirements.txt or pyproject.toml.
+4. Add .env.example for API keys.
+5. Add .gitignore.
+6. Add basic logging/configuration.
+7. Create a README with setup instructions, but do not write final results yet.
+8. Add a minimal test setup.
+9. Make sure no API keys or raw huge datasets are committed.
+
+SUGGESTED STRUCTURE
+-------------------
+hiver-sde-assignment/
+    data/
+        raw/
+        processed/
+        golden/
+    src/
+        data/
+        intents/
+        retrieval/
+        generation/
+        escalation/
+    baselines/
+    evaluation/
+    scripts/
+    app/
+    tests/
+    README.md
+    DECISION_LOG.md
+    REPORT.md
+    requirements.txt
+    .env.example
+
+OUTCOME
+-------
+A runnable empty project with:
+- reproducible environment
+- clear folders
+- configuration handling
+- basic tests
+- README setup instructions
+
+DO NOT:
+-------
+- Build the complete agent yet.
+- Pick a brand without inspecting the data.
+
+
+PHASE 1 — DATASET INSPECTION
+============================
+
+OBJECTIVE
+---------
+Understand the Twitter dataset before making design decisions.
+
+INPUT
+-----
+Customer Support on Twitter dataset:
+thoughtvector/customer-support-on-twitter
+
+TASKS
+-----
+Create scripts that inspect:
+1. Dataset files and columns.
+2. Number of rows.
+3. Available brands/accounts.
+4. Tweet counts per brand.
+5. Customer vs brand/support messages where identifiable.
+6. Conversation/thread structure.
+7. Missing values.
+8. Duplicate tweets.
+9. Date/time distribution.
+10. Representative conversations.
+
+Do NOT load the entire dataset into memory if it is too large.
+Use chunked processing where appropriate.
+
+Produce a brand statistics report such as:
+brand, total_tweets, conversations, customer_messages, brand_messages
+
+Then inspect sample conversations from the strongest candidate brands.
+
+OUTCOME
+-------
+Generate:
+- data/processed/brand_statistics.csv
+- data/processed/dataset_summary.json
+- sample conversation files or printed reports
+- scripts/inspect_dataset.py
+
+Most importantly:
+A shortlist of 3–5 candidate brands with evidence explaining why each
+could work for this assignment.
+
+SUCCESS CRITERIA
+----------------
+We can answer:
+- What does the dataset actually contain?
+- Which brand has enough useful conversations?
+- Are customer/brand replies identifiable?
+- Can conversations be reconstructed?
+
+
+PHASE 2 — SELECT ONE BRAND
+==========================
+
+OBJECTIVE
+---------
+Choose ONE brand for the entire project.
+
+SELECTION CRITERIA
+------------------
+Prioritize:
+1. Sufficient number of conversations.
+2. Clear customer-support interactions.
+3. Diverse but understandable problems.
+4. Consistent historical resolutions.
+5. Enough data for train/dev/test or knowledge/evaluation splits.
+6. Minimal noise compared with alternatives.
+
+TASKS
+-----
+1. Compare candidate brands.
+2. Inspect representative conversations.
+3. Select one brand.
+4. Record the decision and reasoning in DECISION_LOG.md.
+5. Define the project scope around this brand.
+
+OUTCOME
+-------
+A fixed selected brand.
+
+Example:
+SELECTED_BRAND = "BrandName"
+
+Also produce:
+- decision explaining why this brand was chosen
+- rough dataset size to be used
+- initial scope statement
+
+IMPORTANT
+---------
+Do not change the selected brand later unless there is a serious data problem.
+If changing it becomes necessary, record why.
+
+
+PHASE 3 — CLEAN AND RECONSTRUCT CONVERSATIONS
+==============================================
+
+OBJECTIVE
+---------
+Transform messy tweets into usable customer-support cases.
+
+TASKS
+-----
+Build a preprocessing pipeline that:
+1. Removes obvious unusable rows.
+2. Handles missing values.
+3. Removes duplicates where appropriate.
+4. Identifies customer messages.
+5. Identifies brand/support replies.
+6. Reconstructs conversation context when possible.
+7. Groups related messages into conversation/case records.
+8. Preserves timestamps and IDs.
+9. Keeps original text available for traceability.
+10. Creates a deterministic train/knowledge/evaluation split.
+
+Recommended normalized record:
+
+{
+  "conversation_id": "...",
+  "customer_message": "...",
+  "brand_response": "...",
+  "context": [...],
+  "timestamp": "...",
+  "brand": "...",
+  "source_ids": [...]
+}
+
+If multi-turn context is available, preserve it rather than reducing
+everything to a single tweet.
+
+OUTCOME
+-------
+Generate a clean dataset such as:
+- data/processed/support_cases.jsonl
+- data/processed/support_cases_sample.jsonl
+- preprocessing statistics
+
+Also produce:
+- number of usable cases
+- number of multi-turn conversations
+- percentage removed
+- examples before/after preprocessing
+
+SUCCESS CRITERIA
+----------------
+A human can inspect 20–50 random cases and understand exactly what
+customer problem and historical brand response the system is using.
+
+
+PHASE 4 — DISCOVER AND DEFINE INTENTS
+=====================================
+
+OBJECTIVE
+---------
+Create a small set of customer-support intent categories based on the
+selected brand's actual data.
+
+IMPORTANT
+---------
+Do NOT blindly use Banking77's 77 labels.
+Do NOT create dozens of unnecessary intents.
+
+Target approximately 8–15 useful intents, depending on the data.
+
+TASKS
+-----
+1. Sample a representative set of customer messages.
+2. Use clustering/LLM analysis only as assistance for discovering themes.
+3. Inspect representative examples for every proposed category.
+4. Merge overlapping categories.
+5. Remove categories with too little useful data unless they are important.
+6. Define each final intent in plain English.
+7. Define positive examples and boundary cases.
+8. Create a stable label mapping.
+
+Example format:
+
+refund:
+    description: Customer is asking about a refund, refund status,
+                 or missing refund.
+    examples:
+        - "Where is my refund?"
+        - "I requested a refund but haven't received it."
+
+OUTCOME
+-------
+Generate:
+- src/intents/labels.py or config/intent_labels.json
+- docs/intent_definitions.md
+- intent distribution report
+- representative examples per intent
+
+We should be able to explain every intent in one or two sentences.
+
+SUCCESS CRITERIA
+----------------
+Two people reading the intent definitions should generally agree on
+which label a customer message belongs to.
+
+
+PHASE 5 — BUILD THE GOLDEN EVALUATION SET
+=========================================
+
+OBJECTIVE
+---------
+Create 150–250 manually labelled examples that serve as the main
+ground-truth evaluation set.
+
+THIS IS CRITICAL.
+
+TASKS
+-----
+1. Sample messages across all final intents.
+2. Avoid sampling only the easiest/common examples.
+3. Include ambiguous and difficult cases.
+4. Include rare but important intents.
+5. Manually assign:
+   - intent
+   - expected action: AUTO_HANDLE or ESCALATE
+   - optional notes/reason
+6. Keep these examples isolated from the knowledge/index data used for
+   final evaluation.
+7. Record how sampling and labeling were performed.
+8. If possible, have a second human review a subset for label consistency.
+
+Recommended schema:
+
+{
+  "id": "...",
+  "customer_message": "...",
+  "gold_intent": "...",
+  "gold_action": "AUTO_HANDLE",
+  "gold_notes": "..."
+}
+
+OUTCOME
+-------
+Generate:
+- data/golden/golden_set.jsonl
+- data/golden/golden_set.csv
+- docs/golden_set_methodology.md
+
+The methodology must explain:
+- sample size
+- sampling strategy
+- label definitions
+- how difficult cases were included
+- how leakage was avoided
+
+SUCCESS CRITERIA
+----------------
+We have 150–250 trustworthy examples that were not used to directly
+teach the final system.
+
+
+PHASE 6 — BUILD INTENT BASELINE #1: MAJORITY CLASS
+===================================================
+
+OBJECTIVE
+---------
+Create a deliberately trivial baseline.
+
+TASKS
+-----
+Predict the most common intent for every message in the golden set.
+
+OUTCOME
+-------
+Produce:
+- baseline predictions
+- accuracy
+- macro F1
+- per-intent results if useful
+
+This establishes a minimum reference point.
+
+Example:
+Majority baseline accuracy = 32%
+
+
+PHASE 7 — BUILD INTENT BASELINE #2: TF-IDF + LOGISTIC REGRESSION
+===============================================================
+
+OBJECTIVE
+---------
+Create a simple traditional ML classifier.
+
+PIPELINE
+--------
+Customer message
+    |
+    v
+TF-IDF
+    |
+    v
+Logistic Regression
+    |
+    v
+Intent
+
+TASKS
+-----
+1. Train only on non-golden training data.
+2. Use a validation split for basic tuning.
+3. Evaluate once on the golden set.
+4. Save predictions and metrics.
+5. Produce a confusion matrix.
+
+OUTCOME
+-------
+Generate:
+- baselines/tfidf_classifier.py
+- baseline metrics
+- confusion matrix
+- prediction file
+
+Metrics:
+- Accuracy
+- Macro F1
+- Per-intent F1
+
+This becomes the simple baseline for comparison.
+
+
+PHASE 8 — BUILD THE INTENT CLASSIFIER
+=====================================
+
+OBJECTIVE
+---------
+Build the primary AI intent classification component.
+
+TASKS
+-----
+Use an existing LLM or suitable classifier.
+
+The classifier should:
+1. Receive a customer message.
+2. Use the final intent definitions.
+3. Return a structured result.
+4. Include confidence where possible.
+5. Avoid inventing new intent labels.
+6. Handle ambiguous cases explicitly.
+
+Recommended output:
+
+{
+  "intent": "refund",
+  "confidence": 0.91
+}
+
+Compare its results against:
+- Majority baseline
+- TF-IDF + Logistic Regression
+
+OUTCOME
+-------
+Produce:
+- src/intents/classifier.py
+- structured predictions
+- intent evaluation results
+- comparison table
+
+SUCCESS CRITERIA
+----------------
+The AI classifier should beat at least the simple baseline or clearly
+explain where and why it does not.
+
+
+PHASE 9 — BUILD HISTORICAL CASE RETRIEVAL
+=========================================
+
+OBJECTIVE
+---------
+Find historically similar customer-support cases for every new query.
+
+This is the knowledge/retrieval part of the system.
+
+TASKS
+-----
+1. Take historical support cases NOT belonging to the golden evaluation set.
+2. Create embeddings for customer messages/cases.
+3. Store vectors in FAISS or another simple vector index.
+4. For a new customer message:
+   a. create its embedding
+   b. search for top-k similar cases
+   c. return the historical customer message + brand response
+5. Preserve source IDs so evidence can be traced back.
+6. Measure retrieval quality separately if possible.
+
+Start with top_k = 3 or 5.
+
+OUTCOME
+-------
+Generate:
+- src/retrieval/embeddings.py
+- src/retrieval/retriever.py
+- local vector index
+- retrieval examples
+- retrieval evaluation statistics
+
+Example output:
+
+Query:
+"My refund still hasn't arrived."
+
+Retrieved:
+1. Customer: "Where is my refund?"
+   Brand: "Please DM your transaction ID..."
+2. Customer: "Refund is pending..."
+   Brand: "We'll check the status..."
+3. Customer: "I haven't received my refund..."
+   Brand: "Please send your reference number..."
+
+SUCCESS CRITERIA
+----------------
+Retrieved cases should usually be genuinely relevant, not merely
+lexically similar.
+
+
+PHASE 10 — BUILD GROUNDED REPLY GENERATION
+==========================================
+
+OBJECTIVE
+---------
+Generate a useful reply using the customer's query, intent, and
+historical evidence.
+
+INPUT TO LLM
+------------
+1. Customer message
+2. Predicted intent
+3. Top historical cases
+4. Strict instructions to stay grounded
+
+CORE RULE
+---------
+The LLM must NOT invent:
+- policies
+- refund amounts
+- deadlines
+- guarantees
+- account actions
+- facts not supported by the evidence
+
+If the evidence is insufficient, it should recommend escalation instead
+of hallucinating an answer.
+
+Recommended structured output:
+
+{
+  "draft_reply": "...",
+  "evidence_ids": ["...", "..."],
+  "grounding_note": "..."
+}
+
+OUTCOME
+-------
+Generate:
+- src/generation/reply_generator.py
+- example generated replies
+- stored evidence used for each reply
+
+SUCCESS CRITERIA
+----------------
+A reviewer can trace important claims in the reply back to historical
+support evidence.
+
+
+PHASE 11 — BUILD ESCALATION DECISION
+====================================
+
+OBJECTIVE
+---------
+Decide whether the AI should handle the case or send it to a human.
+
+IMPORTANT PRINCIPLE
+-------------------
+Escalation is a feature, not a failure.
+
+The agent should prefer escalation when it lacks sufficient evidence
+or when the issue is high-risk.
+
+POSSIBLE ESCALATION SIGNALS
+---------------------------
+- Potential fraud/payment dispute
+- Legal threats or highly sensitive complaints
+- Repeated unresolved issues
+- Low intent confidence
+- Poor retrieval similarity
+- No useful historical examples
+- Conflicting historical resolutions
+- Other high-risk categories identified from the selected brand
+
+AUTO-HANDLE SIGNALS
+-------------------
+- Common intent
+- High confidence
+- Strong retrieval evidence
+- Consistent historical resolutions
+- Low-risk issue
+
+TASKS
+-----
+Create a decision module that returns:
+
+{
+  "decision": "AUTO_HANDLE",
+  "reason": "Common issue with strong historical evidence..."
+}
+
+or:
+
+{
+  "decision": "ESCALATE",
+  "reason": "Insufficient historical evidence..."
+}
+
+Avoid arbitrary thresholds. Make thresholds configurable and tune them
+using validation data, not the golden set.
+
+OUTCOME
+-------
+Generate:
+- src/escalation/decision.py
+- escalation rules/config
+- examples of auto-handle and escalation decisions
+
+SUCCESS CRITERIA
+----------------
+The system should be conservative about unsafe automatic responses.
+
+
+PHASE 12 — INTEGRATE THE COMPLETE AGENT
+=======================================
+
+OBJECTIVE
+---------
+Combine all components behind one clean interface.
+
+Recommended API:
+
+result = agent.handle("My refund hasn't arrived.")
+
+Expected structure:
+
+{
+  "intent": "refund",
+  "confidence": 0.91,
+  "retrieved_cases": [...],
+  "draft_reply": "Sorry for the delay...",
+  "decision": "AUTO_HANDLE",
+  "reason": "Common issue with strong historical evidence."
+}
+
+PIPELINE
+--------
+message
+  -> intent classifier
+  -> retrieval
+  -> reply generator
+  -> escalation decision
+  -> final structured response
+
+OUTCOME
+-------
+Generate:
+- src/agent.py
+- integration tests
+- CLI or simple demo
+- deterministic/reproducible execution where possible
+
+SUCCESS CRITERIA
+----------------
+One command should process a new customer message from start to finish.
+
+
+PHASE 13 — EVALUATION HARNESS
+=============================
+
+OBJECTIVE
+---------
+Automatically evaluate the entire system on the golden set.
+
+INTENT METRICS
+--------------
+- Accuracy
+- Macro F1
+- Per-intent F1
+- Confusion matrix
+
+RETRIEVAL METRICS
+-----------------
+Where feasible:
+- Top-k relevance
+- Recall@k or similar retrieval metric
+- Manual spot checks
+
+REPLY METRICS
+-------------
+Use an LLM judge for:
+- Correctness
+- Groundedness
+- Helpfulness
+- Appropriate tone
+- Hallucination / unsupported claims
+
+ESCALATION METRICS
+------------------
+- Accuracy
+- Precision
+- Recall
+- F1
+- False auto-handle rate
+- False escalation rate
+
+IMPORTANT
+---------
+Save raw predictions, not just summary numbers.
+
+OUTCOME
+-------
+Generate:
+- evaluation/run_evaluation.py
+- evaluation result JSON/CSV files
+- summary tables
+- confusion matrix
+- reproducible evaluation command
+
+Example:
+python -m evaluation.run_evaluation
+
+
+PHASE 14 — LLM-AS-JUDGE + HUMAN AGREEMENT
+=========================================
+
+OBJECTIVE
+---------
+Prove that the automated LLM judge is reasonably trustworthy.
+
+TASKS
+-----
+1. Define a clear rubric.
+2. Run the judge over generated replies.
+3. Select a smaller subset, e.g. 30–50 cases.
+4. Have a human score those cases using the SAME rubric.
+5. Compare human vs LLM scores.
+6. Report agreement/correlation.
+7. Analyze disagreements.
+
+Suggested rubric:
+
+1 = Poor
+2 = Weak
+3 = Acceptable
+4 = Good
+5 = Excellent
+
+Dimensions:
+- Correctness
+- Groundedness
+- Helpfulness
+- Tone
+- Hallucination/unsupported claims
+
+OUTCOME
+-------
+Generate:
+- evaluation/llm_judge.py
+- human evaluation template
+- human vs judge comparison
+- agreement statistic(s)
+- examples of judge disagreements
+
+SUCCESS CRITERIA
+----------------
+We can honestly state how well our automated judge agrees with humans.
+
+
+PHASE 15 — FAILURE ANALYSIS
+============================
+
+OBJECTIVE
+---------
+Identify the TOP 5 ways the system fails.
+
+DO NOT manufacture failures.
+Use real evaluation examples.
+
+For each failure:
+
+1. Show customer message.
+2. Show predicted intent/action/reply.
+3. Show expected result if available.
+4. Explain what went wrong.
+5. Give a hypothesis for why it happened.
+6. Suggest a possible fix.
+
+Potential categories:
+- Ambiguous intent
+- Poor retrieval
+- Conflicting historical responses
+- Hallucinated information
+- Wrong escalation
+- Rare intent
+- Multi-intent message
+- Missing context
+
+OUTCOME
+-------
+Generate:
+- docs/failure_analysis.md
+- top 5 failure examples
+- supporting metrics
+
+SUCCESS CRITERIA
+----------------
+The failure analysis demonstrates understanding rather than simply
+reporting mistakes.
+
+
+PHASE 16 — "WHAT IS MISLEADING ABOUT MY HEADLINE NUMBER?"
+==========================================================
+
+OBJECTIVE
+---------
+Challenge our strongest result.
+
+Example headline:
+"Our intent classifier achieves 91% accuracy."
+
+Then investigate:
+- Class imbalance
+- Easy vs difficult examples
+- Rare intent performance
+- Golden-set size
+- Data leakage risk
+- Human labeling uncertainty
+- Reply quality vs intent accuracy
+- Escalation mistakes hidden by overall accuracy
+
+Possible conclusion:
+"91% overall accuracy is misleading because common intents dominate
+the evaluation set and minority-intent macro F1 is substantially lower."
+
+OUTCOME
+-------
+A mandatory report section that honestly qualifies the headline metric.
+
+
+PHASE 17 — DECISION LOG
+=======================
+
+OBJECTIVE
+---------
+Document 10–15 non-obvious engineering decisions.
+
+Each decision should contain:
+- Decision
+- Reason
+- Alternatives considered
+- Trade-off
+
+Examples:
+1. Why we selected this brand.
+2. Why we selected 10–15 intents.
+3. Why we used RAG instead of fine-tuning.
+4. Why we chose FAISS.
+5. Why top_k = 5.
+6. Why certain intents escalate.
+7. Why the golden set has its sampling strategy.
+8. Why we use a particular LLM.
+9. Why we keep multi-turn context.
+10. Why we chose particular evaluation metrics.
+11. Why certain data was excluded.
+12. Why the system refuses to answer with insufficient evidence.
+
+OUTCOME
+-------
+Generate:
+DECISION_LOG.md
+
+
+PHASE 18 — SIMPLE DEMO
+======================
+
+OBJECTIVE
+---------
+Make the system easy to demonstrate.
+
+A simple Streamlit or CLI interface is enough.
+
+Example:
+
+CUSTOMER MESSAGE
+"My refund hasn't arrived after 10 days."
+
+SYSTEM OUTPUT
+-------------
+Intent: Refund
+Confidence: 0.91
+
+Similar cases:
+- Case 123
+- Case 456
+- Case 789
+
+Draft reply:
+"Sorry for the delay. Please DM us your transaction ID
+so we can check the refund status."
+
+Decision:
+AUTO_HANDLE
+
+Reason:
+Common issue with strong historical evidence.
+
+Another example should demonstrate escalation:
+
+Customer:
+"I don't recognize this large payment."
+
+Decision:
+ESCALATE
+
+Reason:
+Potential financial dispute requiring human verification.
+
+OUTCOME
+-------
+A simple runnable demo that shows the complete pipeline.
+
+
+PHASE 19 — FINAL REPORT / README
+================================
+
+OBJECTIVE
+---------
+Create the final 6-page-max report OR a strong README section.
+
+REQUIRED SECTIONS
+-----------------
+1. Problem framing
+   - What does "good" mean for this brand?
+   - What did we choose NOT to build?
+
+2. System architecture
+   - Data
+   - Intent classification
+   - Retrieval
+   - Reply generation
+   - Escalation
+
+3. Dataset
+   - Selected brand
+   - Number of usable cases
+   - Sampling
+   - Golden set methodology
+
+4. Results
+   Compare against:
+   - Majority baseline
+   - TF-IDF + Logistic Regression
+   - Our AI system
+
+5. Reply evaluation
+   - LLM judge rubric
+   - Human agreement
+
+6. Escalation evaluation
+   - Metrics
+   - Examples
+
+7. Failure analysis
+   - Top 5 failures
+
+8. "What is misleading about my headline number?"
+
+9. What we would do with one more week
+
+10. Limitations
+
+OUTCOME
+-------
+A concise report that emphasizes evidence and engineering trade-offs.
+
+
+PHASE 20 — REPRODUCIBILITY CHECK
+=================================
+
+OBJECTIVE
+---------
+A fresh user should be able to reproduce the headline results in under
+15 minutes, as requested by Hiver.
+
+TASKS
+-----
+1. Create a small evaluation-ready data subset.
+2. Include scripts to build/rebuild indexes if required.
+3. Document API key setup.
+4. Document exact commands.
+5. Make sure the golden evaluation set is included as appropriate.
+6. Avoid requiring the evaluator to download/process all 3M tweets.
+7. Test the README from a clean environment.
+
+README SHOULD CONTAIN
+---------------------
+1. Project overview
+2. Architecture
+3. Installation
+4. Environment variables
+5. Data preparation
+6. How to build index
+7. How to run agent
+8. How to run evaluation
+9. Where results are stored
+10. Headline results
+11. Limitations
+12. Example input/output
+
+OUTCOME
+-------
+A reviewer can clone the repository and reproduce the main reported
+numbers in less than 15 minutes.
+
+
+FINAL DELIVERABLE CHECKLIST
+===========================
+
+[ ] Public/private repository with access granted
+[ ] Clean README
+[ ] Runnable pipeline
+[ ] Selected brand clearly documented
+[ ] Clean processed dataset/subset
+[ ] 150–250 example golden evaluation set
+[ ] Golden set sampling/labeling methodology
+[ ] Majority baseline
+[ ] TF-IDF + Logistic Regression baseline
+[ ] AI intent classifier
+[ ] Historical retrieval system
+[ ] Grounded reply generator
+[ ] Escalation decision system
+[ ] End-to-end agent
+[ ] Automated evaluation harness
+[ ] LLM-as-judge
+[ ] Human-vs-LLM judge agreement analysis
+[ ] Top 5 failure analysis
+[ ] "Misleading headline number" section
+[ ] 10–15 decision log entries
+[ ] Final report <= 6 pages or equivalent README section
+[ ] Simple demo
+[ ] Reproduction tested in under 15 minutes
+
+
+RECOMMENDED IMPLEMENTATION ORDER
+================================
+
+Do not jump around.
+
+1. Setup
+2. Inspect dataset
+3. Select brand
+4. Clean/reconstruct conversations
+5. Discover intents
+6. Create golden set
+7. Majority baseline
+8. TF-IDF baseline
+9. AI intent classifier
+10. Retrieval
+11. Grounded generation
+12. Escalation
+13. End-to-end integration
+14. Evaluation
+15. LLM judge + human agreement
+16. Failure analysis
+17. Decision log
+18. Demo
+19. Report
+20. Reproducibility check
+
+
+IMPORTANT GUIDELINES FOR CLAUDE CODE
+====================================
+
+When implementing each phase:
+
+1. Implement ONLY the current phase unless explicitly asked otherwise.
+2. Before changing architecture, explain why the change is needed.
+3. Keep functions small and testable.
+4. Add tests for important logic.
+5. Save intermediate outputs to files so results are inspectable.
+6. Never silently discard data; report filtering statistics.
+7. Never leak golden-set examples into training/index construction.
+8. Never hard-code evaluation results.
+9. Never claim a metric without saving the underlying predictions.
+10. Keep API/model configuration in environment variables or config files.
+11. Use deterministic random seeds for sampling where possible.
+12. Log important decisions.
+13. Prefer simple implementations that can be explained in an interview.
+14. Do not over-engineer the frontend.
+15. Do not build production Twitter integration; this is an offline AI
+    support-agent prototype.
+16. Do not train an LLM from scratch.
+17. Do not allow the LLM to invent unsupported customer-support policies.
+18. Treat escalation as a valid and desirable outcome when evidence is weak.
+19. When a result is unexpectedly high, investigate possible leakage before
+    celebrating it.
+20. Every major result should be reproducible with one command.
+
+
+THE CORE IDEA TO REMEMBER
+=========================
+
+This project is NOT:
+
+"Train an LLM on 3 million tweets."
+
+It IS:
+
+"Use historical customer-support conversations from ONE brand to build
+a small AI support agent that understands a new customer message,
+finds similar past cases, drafts a grounded response, and knows when
+to hand the case to a human — then rigorously prove how well it works."
+
+The most important part of the assignment is not making the AI look
+impressive. It is demonstrating:
+- what works,
+- what does not work,
+- why it fails,
+- when it should escalate,
+- and whether our evaluation itself can be trusted.

@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+
+# Data (large / raw — never commit)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*.jsonl
+data/processed/*.csv
+!data/processed/.gitkeep
+
+# Vector indexes and model artifacts (rebuildable, can be large)
+*.faiss
+*.index
+data/index/
+
+# Logs
+*.log
+logs/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/
