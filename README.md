@@ -10,7 +10,7 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 (setup) through Phase 5 (golden evaluation set)
+**Status:** Phase 0 (setup) through Phase 6 (majority-class baseline)
 complete. Later sections of this README (results, reproduction steps)
 will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
@@ -178,6 +178,26 @@ eventually be scored against (intent classification, retrieval, generation,
 and escalation). See `docs/golden_set_methodology.md` for the full sampling
 strategy, the escalation-action rubric applied while labeling, and the
 blind self-consistency check.
+
+### Baselines
+
+Every baseline/classifier is evaluated once, on the golden set only.
+Start with the deliberately trivial majority-class baseline:
+
+```bash
+python -m baselines.majority
+```
+
+Predicts `playback_technical_issue` (the most frequent intent in the
+Phase 4 weak-labeled *training* distribution — never computed from the
+golden set itself) for every golden example. Writes
+`artifacts/predictions/majority_baseline_predictions.jsonl` and
+`artifacts/metrics/majority_baseline_metrics.json`.
+
+**Result: 12.2% accuracy, 0.018 macro F1** — deliberately weak, since the
+golden set was built to not over-represent the majority class (see
+`docs/golden_set_methodology.md`). This is the floor later
+classifiers are compared against.
 
 ## Running tests
 

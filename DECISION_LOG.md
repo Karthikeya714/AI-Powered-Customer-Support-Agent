@@ -427,3 +427,54 @@ inter-annotator agreement would be (it can't catch a systematic bias the
 one annotator holds throughout). This is stated plainly in
 `docs/golden_set_methodology.md` rather than presented as equivalent to
 real human validation.
+
+## 2026-09-09 — Majority baseline's class comes from training distribution, not the golden set
+
+**Decision:** `baselines/majority.py` determines its single predicted
+class (`playback_technical_issue`) from the Phase 4 weak-labeled
+*knowledge-split* intent distribution (`data/processed/intent_distribution.json`),
+never from `golden_set.jsonl`'s own label distribution, even though the
+plan's Phase 6 text only says "predict the most common intent for every
+message in the golden set" (which could be read either way).
+
+**Reason:** Keeping every baseline's fitting/decision-making restricted to
+non-golden data, and evaluating once on golden, is the same rule Phase 7
+(TF-IDF+LogReg) and every later classifier follow — applying it here too
+means the majority baseline is a fair, directly comparable floor rather
+than a special case that gets to peek at the answer key it's being scored
+against.
+
+**Alternatives considered:** Computing the mode of `golden_set.jsonl`
+directly — simpler, and in this instance would have produced the same
+predicted class anyway (`playback_technical_issue` is also the largest
+single intent within the capped golden set), but rejected as the general
+rule since it would silently break if the golden set's composition ever
+changed, and is inconsistent with how every other baseline in this
+project is required to work.
+
+**Trade-off:** None material here since both approaches happen to agree
+on the predicted class this time; recorded because the reasoning
+(training-only decisions) matters more going forward than this particular
+outcome.
+
+## 2026-09-09 — Shared evaluate_intents.py built one phase early
+
+**Decision:** `evaluation/evaluate_intents.py` (accuracy, macro F1,
+per-intent precision/recall/F1, confusion matrix) was built now, during
+Phase 6, and used by `baselines/majority.py`, rather than waiting for
+Phase 13's evaluation harness.
+
+**Reason:** Phase 7 (TF-IDF+LogReg) needs the identical set of metrics
+computed the identical way for the two baselines to be genuinely
+comparable — duplicating this logic in `baselines/tfidf_classifier.py`
+next phase, only to consolidate it later in Phase 13 anyway, would mean
+writing it twice and risking the two computations subtly diverging.
+
+**Alternatives considered:** Inlining metric computation directly in
+`baselines/majority.py` — rejected for the duplication reason above; this
+is a small, single-purpose, easily-testable module, not scope creep into
+Phase 13's actual harness (which will additionally handle retrieval,
+reply, and escalation metrics, running the full agent end-to-end).
+
+**Trade-off:** None — this is exactly the kind of shared utility the
+"keep functions small and testable" project guideline calls for.
