@@ -1,0 +1,118 @@
+
+=== AmazonHelp ===
+
+--- conversation rooted at brand tweet 1768950 ---
+  [BRAND] (1768950) @267823 And we keep updating our prices as per data we receive from our sellers. Please refer here: https://t.co/yQb39uNRsX (2/2) ^SV
+
+--- conversation rooted at brand tweet 1190175 ---
+  [BRAND] (1190168) @399739 I'm sorry for the trouble with your delivery. I recommend trying these steps: https://t.co/eVVwAETSwo Please keep us posted. ^RA
+  [CUSTOMER] (1190169) @AmazonHelp I found those steps on your website and have checked them including trying to contact Hermes. Only option was to email them which I have done.
+  [BRAND] (1190171) @399739 Please keep us updated on the outcome, Laurence. ^WJ
+  [CUSTOMER] (1190173) @AmazonHelp This was @6841 response: "There are some limits to what I can tell you because we have a contractual arrangement with the retailer so the best thing to do is to contact them for a full update." I have raised an investigation ticket. I'm just glad @115830 are here to help.
+  [BRAND] (1190175) @399739 Thank you for the update Laurence. Please contact us through the link provided on the previous post and please keep us updated.^GA
+
+--- conversation rooted at brand tweet 848236 ---
+  [BRAND] (848240) @321583 We would like to help you. Please share your details with us here: https://t.co/GIJyeYqKE0. We'll get in touch shortly.(1/2) ^CB
+  [CUSTOMER] (848239) @AmazonHelp Yes I did. If the order can't be delivered today also then I'm cancelling the order.
+  [BRAND] (848238) @321583 Thanks for sharing the details. We'll reach out to you soon with an update. ^SG
+  [CUSTOMER] (848237) @AmazonHelp If it's not happening today. Cancel my order.
+  [BRAND] (848236) @321583 Please do not worry Nikita, we'll work on it and get back to you at the earliest. ^HN
+
+=== AppleSupport ===
+
+--- conversation rooted at brand tweet 1359166 ---
+  [CUSTOMER] (1359168) Why is it everytime I get an update on my phone, I experience problems with the iPhone @AppleSupport
+  [BRAND] (1359166) @436878 Hi. We'd like to help. Tell us more about the issue you're having.
+
+--- conversation rooted at brand tweet 2286252 ---
+  [CUSTOMER] (2286254) Hey @AppleSupport this I glitch is getting worse and worse. I don’t want a shortcut, I want solutions. When can we expect that software update?
+  [BRAND] (2286252) @521564 Hi there! We recently released an iOS update, 11.1.1, that contains a fix for autocorrect issues. Let’s be sure to back up your device prior to updating. How to back up: https://t.co/4f8hwT5to6
+
+--- conversation rooted at brand tweet 1795701 ---
+  [CUSTOMER] (1795703) @AppleSupport I was on face time my battery at the start was 42% I was on the call 9 minutes and my battery dropped to 14%! Outrageous!
+  [BRAND] (1795701) @399151 Happy to help. Is this the first time you have seen this issue with your device?  We'll get information here to figure this out.
+
+=== Uber_Support ===
+
+--- conversation rooted at brand tweet 1717701 ---
+  [BRAND] (1717701) @520119 Find out more info about Sale of Alcohol here; https://t.co/hsIrZFghS3.
+
+--- conversation rooted at brand tweet 1344706 ---
+  [BRAND] (1344706) @433576 That doesn't sound right. Can you please send us a DM so we can look into this?
+
+--- conversation rooted at brand tweet 1483667 ---
+  [BRAND] (1483667) @210342 Here to help! Send us a note here, https://t.co/y4EDPcVZOI, and our team will follow up.
+
+=== SpotifyCares ===
+
+--- conversation rooted at brand tweet 410164 ---
+  [BRAND] (410164) @212837 You're welcome! Let us know if you ever need us again. We'd be... https://t.co/LgAM6ky9Vv /KB
+
+--- conversation rooted at brand tweet 2597260 ---
+  [BRAND] (2597257) @474954 Hey Michael! Can you let us know the device, operating system, and Spotify version you're running? We'll see what we can suggest /LO
+  [CUSTOMER] (2597258) @SpotifyCares Yep it’s my iPhone 5 and it’s running 11.1.2
+  [BRAND] (2597260) @474954 Thanks. Do you remember the name of the ad? Can you also let us know the date and time when you experienced this issue? /LO
+
+--- conversation rooted at brand tweet 2037601 ---
+  [BRAND] (2037601) @602479 Hey there! Don't worry, we're here to help. Can you DM us your account's email address or username? We'll take a look backstage /MT https://t.co/ldFdZRiNAt
+
+=== Delta ===
+
+--- conversation rooted at brand tweet 479950 ---
+  [CUSTOMER] (479952) @Delta bruh... https://t.co/xpSxiIA2vs
+  [CUSTOMER] (479951) @Delta Any ideas? Trying to start my wife's birthday weekend and weren't notified of a delay until well after the suggested time to be at the airport.
+  [BRAND] (479950) @229059 Hi Matt, can you please DM me your confirmation number? Thank you. *TJM
+
+--- conversation rooted at brand tweet 684457 ---
+  [CUSTOMER] (684458) @Delta big shoutout to Barbara O’Malley at the BZN airport for helping save my first trip to New York. World-class helper!!! #thankyou
+  [BRAND] (684457) @283353 This is awesome! Thank you for recognizing Barbara and thank you for flying with us! *AMS
+
+--- conversation rooted at brand tweet 1200088 ---
+  [BRAND] (1199777) @398101 Oh no. Please fill out the Lost Item report via the following link or contact Lost and Found at 305-876-7377  https://t.co/PFXvMptCcO *ALA
+  [CUSTOMER] (1199778) @Delta This is the phobie number for the lost and founds AT Miami airport. But I forgot my Mac book ON BOARD and the say to contact you direct
+  [BRAND] (1200086) @398101 One of our agents will contact you regarding your Mac Book by filling out the form, David.  *ALA
+  [CUSTOMER] (1200087) @Delta Still no News. Is it possible to do fast. I need it for my job
+  [BRAND] (1200088) @398101 Hi David, once your item is located an agent will reach out to you directly. *AMS
+
+=== Tesco ===
+
+--- conversation rooted at brand tweet 608599 ---
+  [CUSTOMER] (608600) No but I really don't why @Tesco @123088 stopped selling Mortadella and replaced it with Cooked Prosciutto, ham and cooked prosciutto are the SAME. Mortadella though? I really appreciated you for that. Please bring it back I heard ALL the Italians saying they'll stop coming!!
+  [BRAND] (608599) @264652 I'll then get right on to ensuring this is fed back to relevant team for review. Thanks - Isaac 2/2
+
+--- conversation rooted at brand tweet 1584721 ---
+  [CUSTOMER] (1584722) @tesco Prize for worst substitution.....? 🙄 https://t.co/SHHNPw6s45
+  [BRAND] (1584721) @487634 Hi Suz, I agree that this is a strange alternative to send. Did you send this back with the driver? Please DM the following: 1/2
+
+--- conversation rooted at brand tweet 2357120 ---
+  [CUSTOMER] (2357122) @Tesco when a floor manager who has served you alcohol before makes faces and holds her chin while looking you up and down and then refuses - time to retrain in basic customer service. I AGREE with think25 but that was a farce and embarrassing for me.
+  [CUSTOMER] (2357121) @Tesco I happily complied and handed bottle back but she smirked a LOT when I was leaving and isn't the first run in with this manager either due to her attitude. Won't be going back anytime soon.
+  [CUSTOMER] (2357118) @Tesco Oh btw I'm actually SIA trained and a licence holder so I'm very aware of rules etc which is why I complied fully. What i didn't appreciate was the whole attitude from the staff member.
+  [BRAND] (2357120) @680896 Hi there, I'm really sorry for the attitude of my colleague as she refused you the sale of alcohol, believing you looked under 25. You obviously understand and agree with the policy so it's disappointing my colleague behaved like this.1/3
+
+=== AmericanAir ===
+
+--- conversation rooted at brand tweet 552812 ---
+  [CUSTOMER] (552817) Tfw you wait longer for your luggage than your flight lasted. @AmericanAir and @164688 you are the worst. #nobags #typicalamericanairlines
+  [BRAND] (552816) @248922 The bag has been unloaded from the plane, and should arrive into baggage claim soon.
+  [CUSTOMER] (552814) @AmericanAir It's been an hour. You consider that acceptable customer service @americanair #incompetence #unacceptable
+  [BRAND] (552812) @248922 We're sorry for the extended delay in getting your bag. Did you check with our agent at the baggage desk?
+
+--- conversation rooted at brand tweet 340255 ---
+  [CUSTOMER] (340256) Many thanks to @AmericanAir for being kind and accommodating. DFW crew got me home in front of the storm on an earlier flight with no fee.
+  [BRAND] (340255) @197262 We're so happy our #AATeam could help! Have a fantastic evening.
+
+--- conversation rooted at brand tweet 1536510 ---
+  [CUSTOMER] (1536511) Got my next flight scheduled with @AmericanAir today! Can’t wait to get #wheelsup in less than 2 weeks to see my son! ❤️❤️
+  [BRAND] (1536510) @476395 This is fantastic news and we love reuniting families together! We can't wait to have you on board and see you soon.
+
+=== TMobileHelp ===
+
+--- conversation rooted at brand tweet 1926522 ---
+  [BRAND] (1926522) @573347 @115913 We're all about making sure you have a working phone. DM us and we'll chat options: https://t.co/cuEwtd2epS *DanKing
+
+--- conversation rooted at brand tweet 2086442 ---
+  [BRAND] (2086442) @616925 @115913 Let's get to the bottom of this, Aaron. We're here for you and we want to get this squared away. DM us. https://t.co/lH0SH5fy2m *MikeRice
+
+--- conversation rooted at brand tweet 1863749 ---
+  [BRAND] (1863749) @556860 Moe we would never want you feeling this way. I show that we tried to assist on 10/3. We would love to continue to assist. *JasmineS

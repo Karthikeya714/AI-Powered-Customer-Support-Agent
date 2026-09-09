@@ -13,12 +13,16 @@ env/
 # Environment / secrets
 .env
 
-# Data (large / raw — never commit)
+# Raw dataset — large, never commit (fetched separately, see README)
 data/raw/*
 !data/raw/.gitkeep
-data/processed/*.jsonl
-data/processed/*.csv
-!data/processed/.gitkeep
+
+# Large derived datasets (rebuilt by scripts/*, sizes track the raw data) —
+# small analysis reports like brand_statistics.csv/dataset_summary.json
+# are intentionally NOT excluded here since they're cheap and are the
+# deliverable evidence for brand selection.
+data/processed/support_cases.jsonl
+data/processed/support_cases_sample.jsonl
 
 # Vector indexes and model artifacts (rebuildable, can be large)
 *.faiss

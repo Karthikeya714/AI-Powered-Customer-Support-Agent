@@ -10,10 +10,11 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 (project setup) complete. Later sections of this README
-(dataset, brand selection, results, reproduction steps) will be filled in as
-each phase lands — see `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt`
-for the full phase plan and `DECISION_LOG.md` for engineering decisions.
+**Status:** Phase 0 (setup) and Phase 1 (dataset inspection) complete. Later
+sections of this README (brand selection, results, reproduction steps) will
+be filled in as each phase lands — see
+`Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
+and `DECISION_LOG.md` for engineering decisions.
 
 ## Project layout
 
@@ -72,11 +73,39 @@ Key variables:
 | `MIN_RETRIEVAL_SIMILARITY` | Escalation threshold, tuned on validation data | `0.5` |
 | `RANDOM_SEED` | Seed for all deterministic sampling | `42` |
 
+## Data preparation
+
+This project uses the [Customer Support on Twitter](https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter)
+dataset (~2.8M tweets, 108 brand support accounts). It is **not** committed
+to this repo (516MB, and Kaggle's license doesn't permit redistribution).
+
+1. Download `twcs.csv` from Kaggle (requires a free Kaggle account/API token).
+2. Place it at `data/raw/customer-support-on-twitter/twcs.csv`.
+3. Run the dataset inspection script:
+
+```bash
+python -m scripts.inspect_dataset
+```
+
+This streams the file in chunks (never loading all ~2.8M rows into memory
+at once) and writes:
+
+- `data/processed/brand_statistics.csv` — per-brand tweet/conversation counts
+- `data/processed/dataset_summary.json` — schema, missing values, duplicates, date range
+- `data/processed/sample_conversations.txt` — reconstructed example threads per candidate brand
+
+See `docs/brand_shortlist.md` for the resulting shortlist of 5 candidate
+brands with supporting evidence (Phase 1 deliverable — brand *selection*
+happens in Phase 2).
+
 ## Running tests
 
 ```bash
 pytest
 ```
+
+Tests run against a small synthetic CSV fixture (`tests/test_data.py`), not
+the real dataset, so they pass without downloading anything.
 
 ## Roadmap
 
