@@ -108,3 +108,65 @@ and keeps the script simple.
 **Trade-off:** A small number of customer tweets that reply to a brand
 without repeating the @-mention in text (rare, since Twitter's reply UI
 auto-inserts the mention) will be undercounted. Not material at this stage.
+
+## 2026-09-09 — Selected brand: SpotifyCares
+
+**Decision:** `SpotifyCares` is the one brand this entire project is built
+around (`SELECTED_BRAND=SpotifyCares` in `.env`). Scope: 43,265 brand
+tweets, 43,243 of which are direct replies ("conversations"), and 31,308
+customer tweets that @-mention the account, out of the full ~2.8M-tweet
+dataset (see `data/processed/brand_statistics.csv`). Only this subset will
+be used for the knowledge index, intent discovery, and the golden set going
+forward — not the full dataset.
+
+**Reason:** Evaluated against the Phase 2 selection criteria (sufficient
+volume, clear support interactions, diverse-but-understandable problems,
+consistent historical resolutions, enough data for splits, minimal noise),
+against the four other Phase 1 candidates (`docs/brand_shortlist.md`):
+- SpotifyCares showed the richest *in-thread* troubleshooting content of any
+  candidate — real multi-turn diagnostic exchanges (device/OS/version
+  questions, a restart step, a follow-up when the issue recurs — see
+  `data/processed/sample_conversations.txt`), not just "please DM us"
+  deflections. This matters directly for grounded reply generation: the
+  system can only ground replies in what the historical `brand_response`
+  text actually contains.
+- It's a single global consumer product (a streaming subscription service)
+  with no jurisdiction-specific policy (unlike Tesco's UK alcohol law or
+  Delta's aviation regulations), which lowers the risk of the LLM needing
+  external policy knowledge it doesn't have and shouldn't invent.
+- Its problem space is naturally bounded and maps cleanly onto the target
+  8–15 intents: playback/streaming issues, account/login, billing/subscription,
+  device compatibility, ads, password reset — without the sprawl seen in
+  AmazonHelp (orders, devices, Prime, sellers, payments, fraud all mixed
+  together) or Delta (many threads need real-time facts like current flight
+  status that can't safely be part of a "grounded" answer).
+- 43k conversations is comfortably enough for a knowledge index + a
+  150–250-example golden set with room to spare, while being *small enough*
+  to keep the whole pipeline easy to build, inspect, and explain live — in
+  line with the instruction to prefer simple, reproducible solutions over
+  maximizing scale.
+
+**Alternatives considered:**
+- `AmazonHelp` — largest volume (169k conversations) but rejected: too
+  heterogeneous a problem space for a tight 8–15 intent taxonomy, and its
+  size adds no real benefit here since 43k is already far more than needed.
+- `AppleSupport` — largest reply-ratio and volume among tech brands, but
+  rejected: sample threads are dominated by single-turn "DM us" deflections
+  with little resolvable content, which would starve grounded generation of
+  real evidence.
+- `Tesco` — rich, human complaint text, but rejected: spans website/IT
+  issues, delivery, and UK-specific in-store policy (e.g. Think25 alcohol
+  verification), adding jurisdiction-specific policy risk without a
+  corresponding benefit over SpotifyCares.
+- `Delta` — good diversity, but rejected: many threads hinge on real-time,
+  case-specific facts (flight status, confirmation numbers) that push most
+  cases toward mandatory escalation, limiting how well the project can
+  demonstrate the auto-handle path.
+
+**Trade-off:** Smaller absolute volume than Amazon/Apple/Delta/Tesco means
+less headroom if a much larger knowledge base turns out to be needed later,
+and Spotify's intents (streaming/technical) are narrower in scope than a
+multi-category retailer's — acceptable since the assignment explicitly asks
+for a justified subset, not maximum scale. Per the Phase 2 instruction, this
+brand will not be changed unless a serious data problem surfaces during
+later phases.

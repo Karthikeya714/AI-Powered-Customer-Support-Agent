@@ -10,11 +10,25 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 (setup) and Phase 1 (dataset inspection) complete. Later
-sections of this README (brand selection, results, reproduction steps) will
-be filled in as each phase lands — see
+**Status:** Phase 0 (setup), Phase 1 (dataset inspection), and Phase 2
+(brand selection) complete. Later sections of this README (results,
+reproduction steps) will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
+
+## Scope
+
+**Selected brand: SpotifyCares.** Chosen from a 5-candidate shortlist after
+inspecting the full dataset — see `docs/brand_shortlist.md` for the
+comparison and `DECISION_LOG.md` for the full reasoning. From here on, the
+project is built entirely around this one brand's data:
+
+- 43,265 brand (support) tweets, 43,243 of them direct replies
+- 31,308 customer tweets that @-mention the account
+- Out of the full ~2.8M-tweet / 108-brand dataset — the rest is not used
+
+This subset is what gets cleaned into support cases (Phase 3), used to
+discover intents (Phase 4), and split into knowledge/golden data (Phase 5+).
 
 ## Project layout
 
