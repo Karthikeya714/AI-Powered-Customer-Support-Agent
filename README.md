@@ -10,13 +10,14 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 through Phase 15 complete (setup, dataset inspection,
+**Status:** Phase 0 through Phase 16 complete (setup, dataset inspection,
 brand selection, data cleaning, intent discovery, golden set, majority
 baseline, TF-IDF baseline, AI intent classifier, historical case
 retrieval, grounded reply generation, escalation decision, the integrated
-agent, the evaluation harness, LLM-as-judge with human agreement, and
-failure analysis). Later sections of this README (decision log summary,
-demo, final report) will be filled in as each phase lands — see
+agent, the evaluation harness, LLM-as-judge with human agreement, failure
+analysis, and the "misleading headline number" self-critique). Later
+sections of this README (demo, final report) will be filled in as each
+phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -455,6 +456,32 @@ evidence into a coherent reply instead of reproducing a fragment, and one
 explicit self-correction where an earlier claim (made before the Phase
 14 evidence bug was fixed) turned out to be wrong once the real evidence
 was visible.
+
+### What is misleading about my headline number? (Phase 16)
+
+`docs/misleading_headline_number.md` — four independent, computed
+reasons 84.7% intent accuracy overstates the system, not a generic
+disclaimer list:
+
+1. **±4.7-point 95% CI** at n=229 — a point estimate, not a precise figure.
+2. **81.6% traffic-weighted accuracy**, not 84.7% — `playback_technical_issue`
+   is both the most common real intent (41.4% of traffic) and one of the
+   weaker-performing categories (71.4% recall), so weighting by real
+   traffic pulls the number *down*.
+3. **77.3% on the deliberately-hard golden subset** vs. 85.5% on the rest
+   — an 8-point gap that's evidence the Phase 5 hard-case sampling
+   worked, not something to explain away.
+4. **Escalation accuracy (60.3%) doesn't overlap intent accuracy's
+   confidence interval at all** — restated as the central finding: the
+   number that predicts deployment safety is a different, much worse
+   number than the one that sounds impressive.
+
+Also addresses reply-quality score inflation (SpotifyCares' real replies
+are mostly low-specificity, so there's rarely a risky claim to
+hallucinate), golden-label uncertainty (checked via blind
+self-consistency only, not independent second-annotator agreement), and
+states data leakage as a **checked and cleared** concern, not an
+unresolved caveat.
 
 ## Running tests
 

@@ -1373,3 +1373,56 @@ cases genuinely support the same help article for playlist loss, not
 just downloaded songs. Updated in `docs/failure_analysis.md` with the
 correction stated explicitly rather than the earlier (wrong) claim
 silently dropped.
+
+## 2026-09-10 — Phase 16: four independent, quantified reasons 84.7% overstates the system
+
+**Decision:** `docs/misleading_headline_number.md` computes four separate
+corrections to the 84.7% intent-accuracy headline, each derived from data
+already collected in earlier phases (no new API calls):
+
+1. **95% CI is ±4.7 points** ([80.1%, 89.4%]) at n=229 — a point estimate,
+   not a precise figure.
+2. **Traffic-reweighted accuracy is 81.6%, not 84.7%** — computed by
+   weighting each intent's golden-set recall by its real share of
+   knowledge-pool traffic (`intent_distribution.json`) instead of the
+   golden set's deliberately-rebalanced proportions. The direction is the
+   non-obvious part: `playback_technical_issue` is both the single most
+   common real intent (41.4%) *and* one of the weaker-performing
+   categories (71.4% recall), so weighting by real traffic pulls the
+   number down, not up.
+3. **The deliberately-hard golden subset (28 non-English/low-cluster-
+   confidence messages, 22 present in the final set) scores 77.3% vs.
+   85.5% for everything else** — an 8-point gap that's evidence the
+   Phase 5 hard-case sampling worked, not a flaw to explain away.
+4. **Escalation accuracy (60.3%, CI [53.9%, 66.6%]) does not overlap
+   intent accuracy's CI at all** — restated from Phase 13/15 as the
+   central finding of this section: the number that predicts deployment
+   safety is a different, much worse number than the one that sounds
+   impressive.
+
+Two additional angles addressed without a numeric correction: reply-
+quality judge scores (Phase 14) are likely inflated by SpotifyCares'
+historical replies being mostly low-specificity (nothing risky to
+hallucinate), and the golden labels' own reliability was checked via
+*blind self-consistency* (Phase 5), not independent second-annotator
+agreement — a real, stated limit on how much confidence any of these
+numbers can carry. Data leakage is explicitly addressed as a **checked
+and cleared** concern (cited against specific decision-log entries per
+phase), not left as an unresolved caveat alongside the others.
+
+**Reason:** The plan requires this section to exist and to honestly
+qualify the strongest result, not perform a token gesture at self-
+criticism. Every claim above is a specific, computed number checked
+against this project's real artifacts (golden set, intent_distribution.json,
+per-intent recall, escalation metrics) — not a generic disclaimer list.
+
+**Alternatives considered:** Writing this as a purely qualitative
+"limitations" list — rejected; a number ("81.6% traffic-weighted" vs.
+"accuracy may not reflect real traffic") is falsifiable and actionable in
+a way a qualitative caveat isn't, and this project had every input needed
+to compute the real numbers rather than gesture at them.
+
+**Trade-off:** None — this is pure synthesis of already-collected
+evidence, consistent with how Phase 13 and Phase 15 already surfaced
+most of these findings; Phase 16's job was assembling them into one
+answer to one specific question, not discovering new ones.
