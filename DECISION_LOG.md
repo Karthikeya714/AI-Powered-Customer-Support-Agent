@@ -2,7 +2,50 @@
 
 Non-obvious engineering decisions made throughout the project, in
 chronological order. Each entry: decision, reason, alternatives considered,
-trade-off.
+trade-off. 46 entries — well beyond the plan's suggested 10-15, because
+entries were written as each phase happened rather than curated
+after the fact; the index below exists so a specific decision can be
+found without reading linearly.
+
+## Index: the plan's 12 suggested decision topics
+
+| Plan's suggested topic | Entry |
+|---|---|
+| Why we selected this brand | "Selected brand: SpotifyCares" |
+| Why we selected the intents | "12 intents; 3 have no automated weak-label coverage" |
+| Why RAG instead of fine-tuning | "RAG (retrieval + grounded generation), not fine-tuning" |
+| Why we chose FAISS | "FAISS as the vector store, not a plain NumPy/sklearn nearest-neighbor search" |
+| Why top_k = 5 | "top_k = 5, the plan's own suggested starting point, never revisited" |
+| Why certain intents escalate | "Escalation signals: a small hard-coded high-risk-intent set, not a learned classifier" |
+| Why the golden set has its sampling strategy | "Golden set sampling uses transform-only clustering + keyword search, never re-fits on golden_pool" |
+| Why we use a particular LLM | "AI intent classifier uses Google Gemini's free tier, not Claude" |
+| Why we keep multi-turn context | "Multi-turn context is preserved through the pipeline, but not yet used by the classifier" |
+| Why we chose particular evaluation metrics | "Evaluation metrics chosen per-component to match what each component needs to prove" |
+| Why certain data was excluded | "Two-pass streaming scan instead of loading the full 2.8M-row CSV"; "Roughly half of knowledge messages discarded as clustering noise" |
+| Why the system refuses to answer with insufficient evidence | "The system prefers escalation over answering from insufficient evidence, enforced at two independent layers" |
+
+## Index: by phase
+
+- **Phase 0** (setup): project structure, centralized config, git-tracked vs. gitignored data paths
+- **Phase 1** (dataset inspection): two-pass streaming scan, @-mention regex linkage
+- **Phase 2** (brand selection): Selected brand: SpotifyCares
+- **Phase 3** (data cleaning): exact id-graph thread reconstruction, one case per brand reply, incoherent-link limitation
+- **Phase 4** (intent discovery): clustering not LLM, 12-intent taxonomy, clustering-noise discard rate
+- **Phase 5** (golden set): transform-only sampling, action-label rubric, blind self-consistency check
+- **Phase 6** (majority baseline): majority class from training distribution, not golden
+- **Phase 7** (TF-IDF baseline): shared `evaluate_intents.py` built early, `class_weight="balanced"`
+- **Phase 8** (AI classifier): Gemini not Claude, schema-enforced labels, confidence-as-ambiguity-signal, raw-prediction cache, two model-quota switches, final 84.7% result
+- **Phase 9** (retrieval): local embeddings, exact FAISS search, FAISS as the library choice, retrieval-quality proxy metric
+- **Phase 10** (generation): written during Phase 8's run, `gold_intent` not predicted intent, evidence_id filtering, live bugs found (fragment reply, evidence-prefix mismatch)
+- **Phase 11** (escalation): rule-based not learned, `MIN_RETRIEVAL_SIMILARITY` recalibration, two-layer insufficient-evidence enforcement
+- **Phase 12** (agent): two-stage escalation check to skip wasted generation calls
+- **Phase 13** (evaluation harness): reuses Phase 8 predictions, the 60.3%-escalation-accuracy finding (unpatched on purpose)
+- **Phase 14** (LLM judge): daily-quota model switch, the evidence-stripping bug (found and fixed), final agreement result
+- **Phase 15** (failure analysis): written with zero new API calls
+- **Phase 16** (misleading headline number): four quantified corrections
+- **Phase 17** (this audit): top_k=5, multi-turn context, evaluation-metric choices, RAG-vs-fine-tuning, FAISS choice
+
+---
 
 ## 2026-09-09 — Project structure follows the provided architecture spec exactly
 
@@ -1426,3 +1469,208 @@ to compute the real numbers rather than gesture at them.
 evidence, consistent with how Phase 13 and Phase 15 already surfaced
 most of these findings; Phase 16's job was assembling them into one
 answer to one specific question, not discovering new ones.
+
+---
+
+## Phase 17 audit: filling gaps against the plan's suggested decision topics
+
+The plan names 12 example decisions this log should cover. Most were
+already documented as a natural byproduct of building each phase (see
+the index at the top of this file). Auditing against that specific list
+surfaced a few foundational choices that were *made* early but never
+explicitly written up as decisions — they'd simply been acted on since
+Phase 0/3/9 without a Decision/Reason/Alternatives/Trade-off entry. The
+five entries below close those gaps.
+
+## 2026-09-10 — RAG (retrieval + grounded generation), not fine-tuning
+
+**Decision:** New customer messages are handled by retrieving similar
+historical cases (Phase 9) and generating a reply grounded in them
+(Phase 10), using an off-the-shelf LLM. No model in this project is
+fine-tuned or trained from scratch on the Twitter support data.
+
+**Reason:** This is the plan's explicit, stated constraint ("do not
+train an LLM from scratch"; "the historical Twitter conversations are
+primarily used as support knowledge/evidence") — but it's also the right
+call independent of that instruction. Fine-tuning would need meaningfully
+more data-cleaning rigor than a knowledge base does (training-set errors
+get baked into model weights; retrieval-set errors stay visible and
+correctable per-query), a held-out validation methodology for the
+fine-tune itself, and — critically — would make the "why did it say
+that" question much harder to answer than "which retrieved case is this
+grounded in, and does the evidence actually support it" (Phase 10's core
+mechanism, directly enabling Phase 15's failure analysis to trace
+specific bad outputs back to specific bad evidence).
+
+**Alternatives considered:** Fine-tuning a small open-weight model on
+SpotifyCares' historical replies — rejected per the plan's explicit
+constraint, and also weaker on the traceability property above even
+setting that constraint aside.
+
+**Trade-off:** RAG's quality is bounded by retrieval quality and the
+generalist LLM's instruction-following, not by how much brand-specific
+"voice" a fine-tune could capture. Accepted; the plan's own success
+criterion ("a reviewer can trace important claims in the reply back to
+historical support evidence") is a RAG-native property that fine-tuning
+would need extra work to replicate.
+
+## 2026-09-10 — FAISS as the vector store, not a plain NumPy/sklearn nearest-neighbor search
+
+**Decision:** `src/retrieval/index.py` uses FAISS (`faiss-cpu`,
+`IndexFlatIP`) rather than, say, `sklearn.neighbors.NearestNeighbors` or
+a hand-rolled NumPy matrix-multiply top-k.
+
+**Reason:** The plan names FAISS explicitly as the suggested tool
+("Store vectors in FAISS or another simple vector index"), and it brings
+real, free advantages a hand-rolled version would have to reimplement:
+`save_index`/`load_index` to/from disk without extra serialization code,
+a battle-tested exact-search implementation, and a straightforward
+upgrade path to an approximate index (`IndexIVFFlat` etc.) if the
+knowledge base ever grew past the point exact search stays instant — a
+path a hand-rolled version doesn't get for free.
+
+**Alternatives considered:** `sklearn.neighbors.NearestNeighbors` —
+viable and arguably one fewer dependency, but FAISS's save/load and
+future-scaling path were judged worth the dependency; a managed vector
+DB (Pinecone, Weaviate, etc.) — rejected as unnecessary infrastructure
+for a ~37k-document local knowledge base in an offline research
+prototype (architecture doc's explicit "what not to build" list).
+
+**Trade-off:** One more third-party dependency (`faiss-cpu`) than the
+sklearn alternative — accepted, the functionality gained (disk
+persistence, scaling headroom) is worth it.
+
+## 2026-09-10 — top_k = 5, the plan's own suggested starting point, never revisited
+
+**Decision:** `TOP_K=5` (`.env.example`, `settings.top_k`) — the number
+of historical cases retrieved and shown to the generator for every
+query. Set in Phase 0 and never changed.
+
+**Reason:** The plan explicitly suggests starting with `top_k = 3 or 5`
+and making it configurable rather than tuning it as a first move — 5 was
+chosen as the more generous of the two suggested starting points, on the
+reasoning that more evidence gives the generator more chances to find a
+genuinely relevant precedent (and Phase 10's prompt already instructs it
+to ground only in cases that are actually relevant, so extra irrelevant
+context in the prompt is a cost in tokens, not correctness).
+
+**Alternatives considered:** `top_k=3` — the plan's other suggested
+value; not chosen, no strong reason to prefer it over 5 discovered during
+implementation. Tuning `top_k` empirically against retrieval quality
+(Phase 9's intent-agreement@k proxy, computed per-query, could support
+this) — not done; the plan frames `top_k` as a configurable starting
+assumption, not a metric to optimize this project's scope calls for.
+
+**Trade-off:** Never empirically validated that 5 is better than 3 (or
+7, or 10) for this knowledge base specifically — an honest gap, and a
+reasonable Phase 19 ("one more week") candidate: `settings.top_k` is
+already a single config value, so sweeping it against
+`evaluate_retrieval.py`'s existing metrics would be cheap.
+
+## 2026-09-10 — Multi-turn context is preserved through the pipeline, but not yet used by the classifier
+
+**Decision:** Phase 3's `support_cases.jsonl` preserves each case's prior
+conversation turns in a `context` array (`{speaker, text, tweet_id}`,
+oldest-first) rather than collapsing every case to a single
+customer-message/brand-response pair — matching the plan's explicit
+instruction ("If multi-turn context is available, preserve it rather
+than reducing everything to a single tweet"). But `src/intents/classifier.py`
+only ever receives the bare `customer_message` string; `context` is
+stored and available, not yet wired into any prompt.
+
+**Reason to preserve it:** Reconstructed conversations often only make
+sense with their prior turns — Phase 3's own reconstruction algorithm
+depends on walking that same chain to find a case's customer message in
+the first place, so the information is already available at zero extra
+cost by the time a case exists.
+
+**Reason it isn't used by the classifier yet:** A brand-new incoming
+message (the actual runtime scenario `SupportAgent.handle()` is built
+for) usually *has* no prior context — this isn't an oversight so much as
+matching what real first-contact traffic looks like. Where it does cost
+something is exactly the case Phase 15 documented (`gold_0240`,
+"missing context" failure): a golden *evaluation* example sampled as a
+single message from a longer thread loses disambiguating information a
+real production message wouldn't have had to lose.
+
+**Alternatives considered:** Passing `context` into the classifier
+prompt whenever it's non-empty — the natural fix, not implemented in
+this project's scope; flagged explicitly in Phase 15 rather than left
+unexplained.
+
+**Trade-off:** The golden set's accuracy numbers are measured under a
+structural handicap for follow-up-style messages that a context-aware
+version of the classifier wouldn't have — worth remembering when reading
+Phase 16's accuracy corrections; this is technically a fifth one, not
+separately numbered there because it's a design gap rather than a
+statistical property of the measurement.
+
+## 2026-09-10 — Evaluation metrics chosen per-component to match what each component needs to prove, not a single generic scorer
+
+**Decision:** Four different metric families, one per pipeline stage:
+accuracy/macro-F1/per-intent-F1/confusion-matrix for intent (Phase 6-8,
+13); similarity distribution + intent-agreement@k proxy for retrieval
+(Phase 9, 13); a 5-dimension 1-5 rubric via LLM-judge + human agreement
+for reply quality (Phase 14); accuracy/precision/recall/F1 +
+false-auto-handle-rate/false-escalation-rate for escalation (Phase 13).
+
+**Reason:** Each stage fails in a different way, so a single shared
+metric (e.g. just "accuracy" everywhere) would hide exactly the kind of
+gap this project's evaluation exists to surface. Macro F1 specifically
+(not just accuracy) for intent, because per-intent performance is
+exactly what a single accuracy number hides (Phase 16). The two
+escalation *rate* metrics specifically (not just accuracy/F1), because
+the plan is explicit that the two error directions aren't equally bad —
+"false auto-handling is especially important because unsafe automatic
+handling is more serious than unnecessarily escalating" (architecture
+doc) — and Phase 13's headline finding (64.8% false-auto-handle rate)
+would be completely invisible behind escalation accuracy alone. An
+LLM-judge rubric for reply quality specifically because "good reply" has
+no ground-truth label to compute accuracy against at all — it has to be
+scored, and Phase 14 exists to establish how much that scoring can be
+trusted.
+
+**Alternatives considered:** A single end-to-end "did the agent do the
+right thing" pass/fail metric — rejected; it would conflate at least
+four independently-diagnosable failure modes (wrong intent, poor
+retrieval, ungrounded reply, wrong escalation decision) into one number,
+making Phase 15's failure analysis much harder to attribute correctly.
+
+**Trade-off:** Four metric families means four things to explain instead
+of one — accepted as the right trade for the diagnostic power gained;
+directly why Phase 15 could name specific, attributable failure
+categories instead of just an aggregate pass rate.
+
+## 2026-09-10 — The system prefers escalation over answering from insufficient evidence, enforced at two independent layers
+
+**Decision:** "Escalate rather than guess" is implemented redundantly,
+not once: `src/generation/prompts.py`'s system prompt explicitly
+instructs the model to write an honest holding reply and set
+`grounded: false` rather than invent an answer when the evidence doesn't
+support one; independently, `src/escalation/decision.py` escalates
+whenever retrieval similarity is below threshold, intent confidence is
+low, or a generated reply comes back ungrounded — regardless of what the
+generator itself decided.
+
+**Reason:** This is the plan's core stated philosophy ("escalation is a
+feature, not a failure"; "if the LLM output is invalid, fail safely") —
+but the concrete engineering reason for enforcing it at *two* independent
+layers rather than trusting the generator's own self-assessment is that
+an LLM's own confidence about its groundedness is exactly the kind of
+self-report that can be wrong without external checking. The escalation
+engine's similarity/confidence thresholds provide a check that doesn't
+depend on the generator having correctly judged itself.
+
+**Alternatives considered:** Trusting only the generator's `grounded`
+flag — rejected as a single point of failure; trusting only the
+upstream similarity/confidence thresholds and skipping the generator's
+own self-assessment — rejected because it would lose the one signal that
+can catch a case where retrieval and classification both looked fine but
+the generated text itself drifted from the evidence anyway (exactly
+`SupportAgent`'s stage-2 `decide()` call, Phase 12).
+
+**Trade-off:** Two layers doing similar-sounding work is some real
+redundancy — deliberate, not accidental: Phase 13's headline finding is
+that the rule-based layer alone still has real gaps (68 false
+auto-handles), so relying on either layer alone would very likely have
+been measurably worse, not just theoretically riskier.

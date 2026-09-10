@@ -10,14 +10,14 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 through Phase 16 complete (setup, dataset inspection,
+**Status:** Phase 0 through Phase 17 complete (setup, dataset inspection,
 brand selection, data cleaning, intent discovery, golden set, majority
 baseline, TF-IDF baseline, AI intent classifier, historical case
 retrieval, grounded reply generation, escalation decision, the integrated
 agent, the evaluation harness, LLM-as-judge with human agreement, failure
-analysis, and the "misleading headline number" self-critique). Later
-sections of this README (demo, final report) will be filled in as each
-phase lands — see
+analysis, the "misleading headline number" self-critique, and a complete
+decision log). Later sections of this README (demo, final report) will be
+filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
