@@ -963,3 +963,54 @@ cruder than the actual labeling policy. They rely on the confidence/
 similarity/grounding signals instead for now — a real limitation worth
 checking directly once Phase 13 runs this module against the full golden
 set.
+
+## 2026-09-10 — Phase 10 live results: real bugs found, evidence_id matching fixed, one left documented not fixed
+
+**Decision:** Ran `scripts/generate_replies.py` against the live API for
+15 golden examples once Phase 8's quota usage was done. Found and fixed
+one real bug in `ReplyGenerator`; found and deliberately did *not* fix a
+second, out-of-scope issue.
+
+**Bug fixed — evidence_id prefix mismatch:** `gold_0244`'s output cited
+case `"1723526"` in `evidence_ids`, but the retrieved case_ids were all
+`"case_1723526"`-style — the exact-match filter (correctly, per its own
+logic) dropped it as unverifiable, even though the `grounding_note` text
+named that same case by number and the citation was real, just missing
+the `case_` prefix. Fixed by matching evidence_ids against both the full
+case_id and the case_id with `case_` stripped
+(`src/generation/reply_generator.py`), covered by a new test
+(`test_generate_normalizes_evidence_ids_missing_case_prefix`). This is a
+correctness fix (recovering real evidence a stricter check was wrongly
+discarding), not a loosening of the "don't trust hallucinated citations"
+rule from the earlier decision log entry — an unmatched id (checked both
+ways) is still dropped.
+
+**Bug found, deliberately not fixed — fragment-response grounding:**
+`gold_0034`'s drafted reply is `"@583775 2: at https://t.co/38J7tFlIBF.
+They should help with this /SY"` — grammatically broken, because the
+historical case it's grounded in (`case_1970802`) has a `brand_response`
+that is itself only the second half of a two-part tweet ("1/2" / "2/2"),
+a known data-reconstruction limitation already documented in Phase 3's
+decision log (multi-part brand replies aren't stitched together). The
+generator is doing exactly what it's supposed to — faithfully grounding
+in the retrieved evidence — the evidence itself is malformed. Fixing this
+properly means going back to Phase 3's conversation reconstruction to
+detect and merge multi-part reply sequences, which Phase 3 already
+considered and explicitly scoped out as an acceptable simplification.
+Re-opening that now would be scope creep on Phase 10; recorded here as
+real, reproducible evidence for Phase 15's failure analysis instead of
+being quietly patched over or ignored.
+
+**Result:** 15/15 example replies grounded (`grounded: true`), 0 errors.
+Every example's `draft_reply` follows the "ask for account details via
+DM" or "we've passed this to the team" pattern seen throughout
+SpotifyCares' actual historical responses — worth noting as a property of
+*this brand's data*, not a weakness of the generator: SpotifyCares' real
+replies are overwhelmingly low-specificity triage/deflection messages
+(rarely stating a concrete policy, amount, or deadline), so there is
+rarely a risky factual claim to hallucinate in the first place. This
+should be read alongside Phase 16 ("what is misleading about my headline
+number"): a 15/15 grounded rate partly reflects that this brand's
+evidence is mostly low-stakes procedural text, not proof the grounding
+mechanism would hold up equally well against a brand whose historical
+replies stated concrete commitments.

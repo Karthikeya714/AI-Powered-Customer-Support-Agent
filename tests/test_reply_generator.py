@@ -74,6 +74,28 @@ def test_generate_drops_hallucinated_evidence_ids(mock_client_cls):
     assert result["evidence_ids"] == ["case_1"]
 
 
+@patch("src.generation.reply_generator.genai.Client")
+def test_generate_normalizes_evidence_ids_missing_case_prefix(mock_client_cls):
+    # observed real behavior: the model sometimes cites "1" instead of "case_1"
+    # -- a real, valid citation, just missing the prefix; must not be dropped
+    output = json.dumps(
+        {
+            "draft_reply": "We'll look into it.",
+            "grounded": True,
+            "evidence_ids": ["1"],
+            "grounding_note": "Based on case 1.",
+        }
+    )
+    mock_client = MagicMock()
+    mock_client.interactions.create.return_value = _fake_interaction(output_text=output)
+    mock_client_cls.return_value = mock_client
+
+    generator = ReplyGenerator(api_key="dummy")
+    result = generator.generate("Where's my refund", "billing_subscription_issue", RETRIEVED_CASES)
+
+    assert result["evidence_ids"] == ["case_1"]
+
+
 @patch("src.generation.reply_generator.time.sleep", return_value=None)
 @patch("src.generation.reply_generator.genai.Client")
 def test_generate_retries_then_fails_safely(mock_client_cls, mock_sleep):

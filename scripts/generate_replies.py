@@ -59,14 +59,20 @@ def main() -> None:
     out_path.write_text(json.dumps(examples, indent=2, ensure_ascii=False), encoding="utf-8")
     logger.info("Wrote %s", out_path)
 
+    def _safe(text) -> str:
+        # Windows console (cp1252) can't render some source characters (curly
+        # quotes, emoji); this only affects the printed preview, never the
+        # saved JSON, which stays full-fidelity UTF-8.
+        return str(text).encode("ascii", errors="replace").decode("ascii")
+
     n_grounded = sum(1 for e in examples if e["grounded"])
     n_errors = sum(1 for e in examples if e["error"])
     print(f"\n=== GENERATED {len(examples)} EXAMPLE REPLIES ===")
     print(f"Grounded: {n_grounded}/{len(examples)}   Errors: {n_errors}/{len(examples)}")
     for e in examples[:3]:
         print(f"\n[{e['id']}] intent={e['gold_intent']} grounded={e['grounded']}")
-        print(f"Customer: {e['customer_message'][:100]}")
-        print(f"Reply: {e['draft_reply']}")
+        print(f"Customer: {_safe(e['customer_message'][:100])}")
+        print(f"Reply: {_safe(e['draft_reply'])}")
         print(f"Evidence: {e['evidence_ids']}")
 
 

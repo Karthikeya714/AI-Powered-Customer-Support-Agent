@@ -1,0 +1,306 @@
+[
+  {
+    "id": "gold_0215",
+    "customer_message": "ok @115888 20 msgs, 10 customer serv reps, 6 weeks later, you still havent taken care of my hacked account nor successfully transfer my hacked account to my new account like you promised, includ. my Premium membership. You’d think you’d want to take my money at the very least",
+    "gold_intent": "account_security_compromise",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_1944717",
+      "case_1156591",
+      "case_2665943",
+      "case_2268686",
+      "case_2268685"
+    ],
+    "draft_reply": "Hey there, we're sorry to hear that! Check out https://t.co/QHn3ok8y2n for what to do next /GT",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1944717"
+    ],
+    "grounding_note": "The reply directly utilizes the standardized support link and phrasing provided in case_1944717 for hacked account inquiries.",
+    "error": null
+  },
+  {
+    "id": "gold_0041",
+    "customer_message": "@SpotifyCares Hello. The email address I think is associated with my account no longer exists. cannot access account (Still Being Charged)",
+    "gold_intent": "account_access_issue",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_708097",
+      "case_379052",
+      "case_2078319",
+      "case_1810978",
+      "case_1903426"
+    ],
+    "draft_reply": "Hey! Help's here. Could you shoot us a DM with any usernames and email addresses you might've used, along with a little info on what's happening? We'll take a look /CS",
+    "grounded": true,
+    "evidence_ids": [
+      "case_2078319",
+      "case_1810978"
+    ],
+    "grounding_note": "The reply uses standard phrasing from the historical cases to ask for a DM with account details to investigate the login and email issue.",
+    "error": null
+  },
+  {
+    "id": "gold_0012",
+    "customer_message": "@115888 please please PLEASE fix your @127972 app !!! ❤️😩",
+    "gold_intent": "playback_technical_issue",
+    "gold_action": "AUTO_HANDLE",
+    "retrieved_case_ids": [
+      "case_2919290",
+      "case_1677492",
+      "case_1358975",
+      "case_2916562",
+      "case_1167959"
+    ],
+    "draft_reply": "Hey there! Could you give us more info about what's happening? We'll see what we can suggest /KL",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1677492"
+    ],
+    "grounding_note": "The drafted reply directly mirrors the troubleshooting request used in historical case 1677492.",
+    "error": null
+  },
+  {
+    "id": "gold_0245",
+    "customer_message": "@115888 what is with that fullscreen album art “now playing” which the playback controls ***disappear after a few seconds*** on the “my timecapsule” playlist? This stuff should be optional. Also a clock to normal now playing screen(also optional) would be actually useful (iOS).",
+    "gold_intent": "feature_request_or_missing_content",
+    "gold_action": "AUTO_HANDLE",
+    "retrieved_case_ids": [
+      "case_1020115",
+      "case_2052777",
+      "case_289771",
+      "case_232228",
+      "case_1302064"
+    ],
+    "draft_reply": "Hey there! Thanks for the feedback—we'll be sure to pass this on to the right team. Let us know if anything else comes up! /ME",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1020115",
+      "case_289771"
+    ],
+    "grounding_note": "The reply acknowledges the feedback and states it will be passed on to the right team, matching standard responses in cases like case_1020115 and case_289771.",
+    "error": null
+  },
+  {
+    "id": "gold_0096",
+    "customer_message": "What in the FUCK @115888 where is my @1534 album I’m gonna pop off",
+    "gold_intent": "feature_request_or_missing_content",
+    "gold_action": "AUTO_HANDLE",
+    "retrieved_case_ids": [
+      "case_2610034",
+      "case_2605038",
+      "case_2637157",
+      "case_1787498",
+      "case_2978946"
+    ],
+    "draft_reply": "Hey there! We’ll have it available to you as soon as it’s available to us. https://t.co/0i8GpimuDa /GK",
+    "grounded": true,
+    "evidence_ids": [
+      "case_2610034"
+    ],
+    "grounding_note": "The reply directly mirrors the standard response used in historical cases when customers ask about missing albums.",
+    "error": null
+  },
+  {
+    "id": "gold_0088",
+    "customer_message": "@117153 sudah bayar premium tapi masih versi free",
+    "gold_intent": "billing_subscription_issue",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_1715018",
+      "case_1731295",
+      "case_2440984",
+      "case_1607067",
+      "case_1470153"
+    ],
+    "draft_reply": "@117153 Hey! We can help out in English via Twitter, but we also have Indonesian support via email at https://t.co/ZgU70TbP8M /RH",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1715018"
+    ],
+    "grounding_note": "The drafted reply directly matches the standard response used in historical cases for Indonesian-language payment and premium activation issues.",
+    "error": null
+  },
+  {
+    "id": "gold_0081",
+    "customer_message": "@SpotifyCares I was charged the subscription but I cant use spotify premium. Whats going on?",
+    "gold_intent": "billing_subscription_issue",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_2833786",
+      "case_1872482",
+      "case_2030149",
+      "case_2032035",
+      "case_393183"
+    ],
+    "draft_reply": "Hey there! Could you send us a DM with your account's email address or username? We'll take a look backstage /MA",
+    "grounded": true,
+    "evidence_ids": [
+      "case_2833786",
+      "case_1872482"
+    ],
+    "grounding_note": "The historical cases consistently ask users to send a DM with their account's email address or username so support can look into the issue.",
+    "error": null
+  },
+  {
+    "id": "gold_0049",
+    "customer_message": "@SpotifyCares Is you close account page down permanently? 2 days in a row I've been trying to close an account.",
+    "gold_intent": "cancellation_or_refund_request",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_1141936",
+      "case_1840414",
+      "case_1739277",
+      "case_2041905",
+      "case_2285099"
+    ],
+    "draft_reply": "Hey! Can you tell us more about what's happening? Also, if you could DM us your account's email address or username, that'd be great /NS https://t.co/ldFdZRiNAt",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1840414"
+    ],
+    "grounding_note": "The reply directly mirrors the phrasing and information request used in historical case 1840414.",
+    "error": null
+  },
+  {
+    "id": "gold_0244",
+    "customer_message": "@SpotifyCares Almost all of my playlists just disappeared. Is there a way that I can try to recover them?",
+    "gold_intent": "account_data_loss",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_782568",
+      "case_1806919",
+      "case_1723526",
+      "case_262656",
+      "case_1622791"
+    ],
+    "draft_reply": "Hey! Can you fire over your account's email address or username via DM? We'll take a look backstage /DR https://t.co/ldFdZRiNAt",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1806919"
+    ],
+    "grounding_note": "The reply directly mirrors the standard troubleshooting request and link used in historical cases for lost playlists.",
+    "error": null
+  },
+  {
+    "id": "gold_0039",
+    "customer_message": "@115888 my account won’t allow me to log in on any device! Pls help!",
+    "gold_intent": "account_access_issue",
+    "gold_action": "AUTO_HANDLE",
+    "retrieved_case_ids": [
+      "case_1292217",
+      "case_2293011",
+      "case_2555582",
+      "case_1147710",
+      "case_2985581"
+    ],
+    "draft_reply": "Hi there! Can you DM us your account's email address or username? We'll take a look backstage /GT https://t.co/ldFdZRiNAt",
+    "grounded": true,
+    "evidence_ids": [
+      "case_2293011"
+    ],
+    "grounding_note": "The reply directly mirrors the standard holding response and requests account details via DM as shown in the historical cases.",
+    "error": null
+  },
+  {
+    "id": "gold_0225",
+    "customer_message": "@SpotifyCares someone else is using my account/changing music and I've tried everything to stop it, please help asap it's scary af",
+    "gold_intent": "account_security_compromise",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_1785558",
+      "case_2489538",
+      "case_1926234",
+      "case_2043198",
+      "case_1207671"
+    ],
+    "draft_reply": "Hey! That's not cool. Could you send us a DM with your account's email address or username? We'll take a look backstage /HC https://t.co/ldFdZRiNAt",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1785558",
+      "case_2043198"
+    ],
+    "grounding_note": "The reply directly mirrors the language and account request process used in historical cases like case_2043198 and case_1785558 for compromised accounts.",
+    "error": null
+  },
+  {
+    "id": "gold_0293",
+    "customer_message": "@131098 Ik zit niet op Facebook.. ..hoe kan ik mijn vrienden vinden op #Spotify ?",
+    "gold_intent": "feature_request_or_missing_content",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_1863161",
+      "case_2439915",
+      "case_1280139",
+      "case_699502",
+      "case_2749497"
+    ],
+    "draft_reply": "@131098 Hey there! We can help out in English via Twitter, but we also have Dutch support via email at https://t.co/ZgU70TbP8M /PB",
+    "grounded": true,
+    "evidence_ids": [
+      "case_2439915"
+    ],
+    "grounding_note": "The historical cases do not contain an answer to the specific feature question, so we provide the standard language-routing holding response seen in case_2439915.",
+    "error": null
+  },
+  {
+    "id": "gold_0188",
+    "customer_message": "Hi @115888 @SpotifyCares please check your dm!!! Badly needed your help",
+    "gold_intent": "dm_followup",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_2982092",
+      "case_1495689",
+      "case_1643016",
+      "case_2208938",
+      "case_1651056"
+    ],
+    "draft_reply": "Hi! We've just sent you a bit more info over DM. We'll carry on helping out there /RA",
+    "grounded": true,
+    "evidence_ids": [
+      "case_2982092"
+    ],
+    "grounding_note": "The drafted reply directly mirrors the exact phrasing used in historical cases when a customer asks to check DMs.",
+    "error": null
+  },
+  {
+    "id": "gold_0034",
+    "customer_message": "@115888 I can’t listen to my music offline when your app repeatedly deletes my music and makes me redownload it twice a week https://t.co/b6fZ9J5uHx",
+    "gold_intent": "playback_technical_issue",
+    "gold_action": "ESCALATE",
+    "retrieved_case_ids": [
+      "case_1970802",
+      "case_781165",
+      "case_1658098",
+      "case_1843879",
+      "case_2095205"
+    ],
+    "draft_reply": "@583775 2: at https://t.co/38J7tFlIBF. They should help with this /SY",
+    "grounded": true,
+    "evidence_ids": [
+      "case_1970802"
+    ],
+    "grounding_note": "The exact customer message matches case_1970802, and the drafted reply uses the identical brand response from that case.",
+    "error": null
+  },
+  {
+    "id": "gold_0201",
+    "customer_message": "@115888 your customer service is non existent",
+    "gold_intent": "customer_service_feedback",
+    "gold_action": "AUTO_HANDLE",
+    "retrieved_case_ids": [
+      "case_2280198",
+      "case_2645268",
+      "case_2846476",
+      "case_1857401",
+      "case_2369718"
+    ],
+    "draft_reply": "Hey there! The cavalry's arrived. Can you let us know what's happening exactly? We'd love to lend a hand /LP",
+    "grounded": true,
+    "evidence_ids": [
+      "case_2280198"
+    ],
+    "grounding_note": "The drafted reply directly uses the exact phrasing and friendly tone from historical case 2280198.",
+    "error": null
+  }
+]

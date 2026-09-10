@@ -75,10 +75,21 @@ class ReplyGenerator:
 
                 parsed = ReplyGeneration.model_validate_json(interaction.output_text)
 
-                kept_ids = [cid for cid in parsed.evidence_ids if cid in valid_case_ids]
-                dropped = set(parsed.evidence_ids) - set(kept_ids)
-                if dropped:
-                    logger.warning("Dropping evidence_ids not among retrieved cases: %s", dropped)
+                # normalize away an observed model quirk: citing "1723526"
+                # instead of "case_1723526" — a real citation to a real
+                # retrieved case, just missing the prefix, so match it
+                # rather than silently losing a valid evidence_id
+                by_bare_id = {cid.removeprefix("case_"): cid for cid in valid_case_ids}
+                kept_ids, dropped_ids = [], []
+                for cid in parsed.evidence_ids:
+                    if cid in valid_case_ids:
+                        kept_ids.append(cid)
+                    elif cid in by_bare_id:
+                        kept_ids.append(by_bare_id[cid])
+                    else:
+                        dropped_ids.append(cid)
+                if dropped_ids:
+                    logger.warning("Dropping evidence_ids not among retrieved cases: %s", dropped_ids)
 
                 return {
                     "draft_reply": parsed.draft_reply,

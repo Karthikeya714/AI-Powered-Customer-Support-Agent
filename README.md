@@ -308,6 +308,19 @@ filtered against the case_ids actually retrieved (a hallucinated citation
 is dropped, not trusted). Writes
 `artifacts/predictions/reply_generation_examples.json`.
 
+**Result (15 examples): 15/15 grounded, 0 errors.** SpotifyCares' actual
+historical replies are overwhelmingly low-specificity triage messages
+("DM us your account email") rather than concrete policy/amount/deadline
+statements, so there's rarely a risky factual claim to hallucinate in the
+first place — worth reading as a property of this brand's data, not proof
+the grounding mechanism generalizes to a brand with more substantive
+replies. Two real findings from this run, both in `DECISION_LOG.md`: a
+citation-format bug (fixed — the model sometimes drops the `case_` prefix
+when citing `evidence_ids`) and a reproducible generation artifact
+(documented, not fixed — one reply mirrors a historical response that is
+itself only half of a multi-part tweet, a known Phase 3 limitation;
+good material for Phase 15's failure analysis).
+
 ### Escalation decision (Phase 11)
 
 ```python
