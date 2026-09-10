@@ -10,11 +10,12 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 through Phase 9 complete (setup, dataset inspection,
+**Status:** Phase 0 through Phase 12 complete (setup, dataset inspection,
 brand selection, data cleaning, intent discovery, golden set, majority
-baseline, TF-IDF baseline, AI intent classifier, and historical case
-retrieval). Later sections of this README (results, reproduction steps)
-will be filled in as each phase lands — see
+baseline, TF-IDF baseline, AI intent classifier, historical case
+retrieval, grounded reply generation, escalation decision, and the
+integrated agent). Later sections of this README (evaluation harness,
+LLM judge, failure analysis) will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -342,6 +343,35 @@ fire) to 0.70 using `scripts/calibrate_escalation_thresholds.py` against a
 (`account_data_loss`/`cancellation_or_refund_request` aren't hard-coded as
 always-escalate, since the golden-labeling rubric treats them
 conditionally, not unconditionally).
+
+### The complete agent (Phase 12)
+
+```bash
+python -m src.agent "My music keeps stopping every few seconds"
+python -m src.agent   # no argument -> interactive loop, Ctrl+C to quit
+```
+
+`SupportAgent.handle(message)` chains everything above — classify →
+retrieve → (maybe) generate → decide — behind one call, returning the
+full structured result (intent + confidence, retrieved case_ids +
+similarities, draft reply + evidence, and the final decision + reason).
+
+Generation is skipped (`draft_reply: null`) whenever the case is already
+escalate-worthy from intent confidence, retrieval similarity, or a
+high-risk intent alone — no point spending a second LLM call on a reply
+that will never be shown to the customer. Verified live:
+
+- `"My music keeps stopping every few seconds, it's really annoying"` →
+  `AUTO_HANDLE`, with a grounded reply citing its evidence case.
+- `"I don't recognize this large payment... someone must have hacked in"`
+  → `ESCALATE`, `draft_reply: null`, reason citing *two* signals at once
+  (high-risk intent + retrieval similarity 0.65 below the 0.70 threshold).
+
+Each dependency (classifier/retriever/generator) can be injected into
+`SupportAgent(...)`, so `tests/test_agent.py` exercises every branch
+(auto-handle, pre-check escalate with generation skipped, post-generation
+escalate on an ungrounded reply, classifier failure, retrieval failure)
+without making real API calls.
 
 ## Running tests
 

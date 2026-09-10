@@ -1014,3 +1014,53 @@ number"): a 15/15 grounded rate partly reflects that this brand's
 evidence is mostly low-stakes procedural text, not proof the grounding
 mechanism would hold up equally well against a brand whose historical
 replies stated concrete commitments.
+
+## 2026-09-10 — Agent skips generation when escalation is already certain (two-stage decision)
+
+**Decision:** `SupportAgent.handle()` calls `decide()` *twice*: once
+right after classification + retrieval (with `reply_grounded=None`), and
+— only if that first check says `AUTO_HANDLE` — again after generation
+(now with the real `reply_grounded` value). If the first check already
+says `ESCALATE`, generation is skipped entirely and `draft_reply` stays
+`None`.
+
+**Reason:** Generation is the second LLM call in the pipeline (after
+classification). If the case is already escalate-worthy from intent
+confidence, retrieval similarity, or a high-risk intent alone, a
+generated reply would never be shown to the customer anyway — spending
+an API call to produce it is pure waste. This isn't theoretical:
+Phase 8's classifier hit real free-tier quota exhaustion during this
+project (documented above), so avoiding an unnecessary second call per
+escalated case is a demonstrated, not speculative, reliability and cost
+win. The architecture doc's own example output confirms this is the
+intended design — its ESCALATE example shows `"draft_reply": null`.
+
+**Alternatives considered:** Always generating, then deciding once — the
+simpler design, and what Phase 10 does in isolation (correctly, since
+Phase 10's job is to test generation quality on its own). Rejected for
+the *integrated* agent specifically, where the wasted call would be
+compounded across every escalated case in real usage. Generating only for
+`AUTO_HANDLE`-leaning cases first, correcting to `ESCALATE` afterward if
+the reply itself turns out ungrounded, keeps the safety property (a
+generated-but-ungrounded reply still correctly escalates) while cutting
+calls for the cases that were never going to use a draft.
+
+**Trade-off:** A case that narrowly clears the pre-check but would have
+generated an obviously-bad reply still gets that reply attempted (as
+intended — this is exactly what Phase 10's `grounded` check is for).
+Human reviewers get no draft at all for cases that escalate on the first
+check, even though a low-quality draft might occasionally still be a
+useful starting point — accepted, since a human handling a flagged
+high-risk or low-confidence case is better served by a clean slate than
+by an unverified, possibly-wrong draft they'd have to first determine is
+untrustworthy.
+
+**Verified live** (not just unit-tested against mocks): running the
+agent end-to-end on `"My music keeps stopping every few seconds..."`
+produced `AUTO_HANDLE` with a grounded, evidence-cited draft reply;
+running it on `"I don't recognize this large payment... someone must
+have hacked in"` produced `ESCALATE` with `draft_reply: null` and a
+reason citing *two* independent signals at once (high-risk intent AND
+retrieval similarity 0.65 below the 0.70 threshold) — confirming the
+`reason` string correctly aggregates multiple simultaneous signals, not
+just the first one found.
