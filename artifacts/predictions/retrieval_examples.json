@@ -1,0 +1,633 @@
+[
+  {
+    "query_id": "gold_0215",
+    "query": "ok @115888 20 msgs, 10 customer serv reps, 6 weeks later, you still havent taken care of my hacked account nor successfully transfer my hacked account to my new account like you promised, includ. my Premium membership. You’d think you’d want to take my money at the very least",
+    "gold_intent": "account_security_compromise",
+    "retrieved": [
+      {
+        "case_id": "case_1944717",
+        "similarity": 0.7193149328231812,
+        "customer_message": "@115888 I think my premium account has been hacked and I can't ask for help or contact you without logging in. Can someone help please?",
+        "brand_response": "@465772 Hi Faith, we're sorry to hear that! Check out https://t.co/QHn3ok8y2n for what to do next /GT",
+        "source_ids": [
+          1944718,
+          1944717
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_1156591",
+        "similarity": 0.7045688033103943,
+        "customer_message": "@115888 my premium account has been hacked!! please help! my email has been changed! I cant reset pwd! Im locked out!!",
+        "brand_response": "@392069 Hey Gus! Can you DM us your account's username and email address? We'll check backstage /JL https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1156592,
+          1156591
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_2665943",
+        "similarity": 0.7001498937606812,
+        "customer_message": "my @117168 account was hacked, now i cant log in an im paying",
+        "brand_response": "@751089 Hi there! We've just replied to your DM. We'll carry on helping you there /CM",
+        "source_ids": [
+          2665944,
+          2665943
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_2268686",
+        "similarity": 0.6769402027130127,
+        "customer_message": "someone hacked into my @115888 account and changed my email and worst is this bastard resubscribed to premium oh what a nightmare",
+        "brand_response": "@660200 Hey Paülo, we’re sorry to hear that. Check out https://t.co/QHn3ok8y2n for what to do next /JN",
+        "source_ids": [
+          2268688,
+          2268686
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_2268685",
+        "similarity": 0.6769402027130127,
+        "customer_message": "someone hacked into my @115888 account and changed my email and worst is this bastard resubscribed to premium oh what a nightmare",
+        "brand_response": "@660200 We understand. You can reach out to our Accounts team by filling out the contact form on the link we previously sent /JN",
+        "source_ids": [
+          2268688,
+          2268686,
+          2268685
+        ],
+        "weak_intent": "account_access_issue"
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0041",
+    "query": "@SpotifyCares Hello. The email address I think is associated with my account no longer exists. cannot access account (Still Being Charged)",
+    "gold_intent": "account_access_issue",
+    "retrieved": [
+      {
+        "case_id": "case_708097",
+        "similarity": 0.8810714483261108,
+        "customer_message": "@SpotifyCares just tried to log into my Spotify account and won’t let me in. Don’t recognise my email address.",
+        "brand_response": "@289268 Hey Chris! Can you DM us your account's username and email address? We'll take a look backstage /SY https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          708098,
+          708097
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_379052",
+        "similarity": 0.8797699213027954,
+        "customer_message": "@SpotifyCares The email associated with my account was changed and it wasn’t me! So now I can’t access my own account. Help?",
+        "brand_response": "@205952 Hey, help's here! Can you DM us your account's email address? We'll check backstage /GK https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          379053,
+          379052
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_2078319",
+        "similarity": 0.8764563202857971,
+        "customer_message": "@SpotifyCares I’m not able to get into my account.  I’ve tried everything.  I guess I don’t know the email that we used. Paying member",
+        "brand_response": "@614678 Hey Amanda, help's here! Could you shoot us a DM with any usernames and email addresses you might've used? We'll take a look /VK https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2078320,
+          2078319
+        ],
+        "weak_intent": null
+      },
+      {
+        "case_id": "case_1810978",
+        "similarity": 0.8748700022697449,
+        "customer_message": "@SpotifyCares i have an issue with my account",
+        "brand_response": "@544093 Hey Santino! We're here to help. Could you DM us your account's email address, along with a little info on what's happening? /LM https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1810979,
+          1810978
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_1903426",
+        "similarity": 0.8746053576469421,
+        "customer_message": "@SpotifyCares I no longer have my email linked to my Spotify premium account. I need help logging back into the account I pay for.",
+        "brand_response": "@567248 Hey Jesse, help's here! Can you DM us your account's email address or username? We'll see what we can suggest /RH https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1903427,
+          1903426
+        ],
+        "weak_intent": null
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0012",
+    "query": "@115888 please please PLEASE fix your @127972 app !!! ❤️😩",
+    "gold_intent": "playback_technical_issue",
+    "retrieved": [
+      {
+        "case_id": "case_2919290",
+        "similarity": 0.8538042306900024,
+        "customer_message": "@115888 fix ur app!!!",
+        "brand_response": "@808004 Hey Gio! Everything should be running smoothly now. Let us know if you're getting issues /GS",
+        "source_ids": [
+          2919291,
+          2919290
+        ],
+        "weak_intent": "playback_technical_issue"
+      },
+      {
+        "case_id": "case_1677492",
+        "similarity": 0.8537301421165466,
+        "customer_message": "@115888 fix your app please",
+        "brand_response": "@510246 Hey there, help's here! Can you give us more info about what's happening? We'll see what we can suggest /KL",
+        "source_ids": [
+          1677493,
+          1677492
+        ],
+        "weak_intent": "playback_technical_issue"
+      },
+      {
+        "case_id": "case_1358975",
+        "similarity": 0.8445295095443726,
+        "customer_message": "@115888 my app isn’t working properly.... ):",
+        "brand_response": "@436840 Hey, that doesn't sound good! Can you let us know what's happening exactly? We'll see how we can help /JP",
+        "source_ids": [
+          1358976,
+          1358975
+        ],
+        "weak_intent": "playback_technical_issue"
+      },
+      {
+        "case_id": "case_2916562",
+        "similarity": 0.8389042019844055,
+        "customer_message": "@115888 fix your app please nothing‘s working",
+        "brand_response": "@807279 Hey there! Everything should be running smoothly now. Let us know if this is still happening /GS",
+        "source_ids": [
+          2916563,
+          2916562
+        ],
+        "weak_intent": "playback_technical_issue"
+      },
+      {
+        "case_id": "case_1167959",
+        "similarity": 0.8381493091583252,
+        "customer_message": "@115888 why does ur app never work !!!!!!!!!!",
+        "brand_response": "@394723 Hey Dayna! Could you send us some details about what's happening, along with any error messages you're seeing? We'll keep an eye out /MQ",
+        "source_ids": [
+          1167960,
+          1167959
+        ],
+        "weak_intent": "playback_technical_issue"
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0245",
+    "query": "@115888 what is with that fullscreen album art “now playing” which the playback controls ***disappear after a few seconds*** on the “my timecapsule” playlist? This stuff should be optional. Also a clock to normal now playing screen(also optional) would be actually useful (iOS).",
+    "gold_intent": "feature_request_or_missing_content",
+    "retrieved": [
+      {
+        "case_id": "case_1020115",
+        "similarity": 0.638989269733429,
+        "customer_message": "@115888 the interface in the timecapsule part of the app is SO MUCH BETTER than the old full-screen player. Please use this everywhere! https://t.co/36bVeQngXr",
+        "brand_response": "@361382 Woohoo, that's what we like to hear! Thanks for the feedback - we'll pas this on. Let us know if there's anything else /ME",
+        "source_ids": [
+          1020117,
+          1020115
+        ],
+        "weak_intent": "playback_technical_issue"
+      },
+      {
+        "case_id": "case_2052777",
+        "similarity": 0.5947660207748413,
+        "customer_message": "@SpotifyCares I heard around that we could have full screen album art with a button next to the play bar? Where is it lol... https://t.co/1qEoHWi97e",
+        "brand_response": "@189768 Hey Cooper! The feature is currently available to Premium users, but we'll let the right team know it's something you'd like to see /AP",
+        "source_ids": [
+          2052778,
+          2052777
+        ],
+        "weak_intent": "feature_request_or_missing_content"
+      },
+      {
+        "case_id": "case_289771",
+        "similarity": 0.5916403532028198,
+        "customer_message": "@115888 @SpotifyCares why can't all playlists be full screen like the Time Capsule one?! It looks so much cooler!",
+        "brand_response": "@185040 Hey there! We don't have any info on this right now, but we'll let the right team know it's something you'd like to see 🙂 /KL",
+        "source_ids": [
+          289772,
+          289771
+        ],
+        "weak_intent": null
+      },
+      {
+        "case_id": "case_232228",
+        "similarity": 0.5864839553833008,
+        "customer_message": "@SpotifyCares is there a way to stop it going to the album art on the time cap. -using android",
+        "brand_response": "@171287 Hi there! We're afraid that's not possible, it plays the same way as any other curated playlist. Hope this clears things up /HC",
+        "source_ids": [
+          232229,
+          232228
+        ],
+        "weak_intent": "feature_request_or_missing_content"
+      },
+      {
+        "case_id": "case_1302064",
+        "similarity": 0.5817247629165649,
+        "customer_message": "@SpotifyCares the now playing was quite different, i was using the new one (screenshot will show the now and then ) the new design its bugged i think https://t.co/WtwhD8KDuP",
+        "brand_response": "@424294 Thanks for the feedback – we appreciate it! We’ll get this passed onto the right team /LO",
+        "source_ids": [
+          1302068,
+          1302067,
+          1302061,
+          1302059,
+          1302060,
+          1302063,
+          1302064
+        ],
+        "weak_intent": null
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0096",
+    "query": "What in the FUCK @115888 where is my @1534 album I’m gonna pop off",
+    "gold_intent": "feature_request_or_missing_content",
+    "retrieved": [
+      {
+        "case_id": "case_2610034",
+        "similarity": 0.797126293182373,
+        "customer_message": "@115888 my man .. where's the album",
+        "brand_response": "@738171 Hi there! We’ll have it available to you as soon as it’s available to us. https://t.co/0i8GpimuDa /GK",
+        "source_ids": [
+          2610035,
+          2610034
+        ],
+        "weak_intent": "feature_request_or_missing_content"
+      },
+      {
+        "case_id": "case_2605038",
+        "similarity": 0.7802278995513916,
+        "customer_message": "where's the ALBUM @115888",
+        "brand_response": "@737074 Hey there! We’ll have it available to you as soon as it’s available to us. https://t.co/0i8GpimuDa /LW",
+        "source_ids": [
+          2605039,
+          2605038
+        ],
+        "weak_intent": "feature_request_or_missing_content"
+      },
+      {
+        "case_id": "case_2637157",
+        "similarity": 0.7668401002883911,
+        "customer_message": "@115888 release the damn album",
+        "brand_response": "@744331 Hey! We’d love to have all of their music available and hopefully we'll have their new album soon. In the meantime, we have some info about Spotify content here: https://t.co/0i8GpimuDa /VV",
+        "source_ids": [
+          2637159,
+          2637158,
+          2637157
+        ],
+        "weak_intent": "feature_request_or_missing_content"
+      },
+      {
+        "case_id": "case_1787498",
+        "similarity": 0.7534456253051758,
+        "customer_message": "@115888 wheres the album sir",
+        "brand_response": "@537000 Hey! Fingers crossed we'll be able to have it soon, but there's info about Spotify content here: https://t.co/0i8GpimuDa. Let us know if you have any other questions /NY",
+        "source_ids": [
+          1787500,
+          1787498
+        ],
+        "weak_intent": "feature_request_or_missing_content"
+      },
+      {
+        "case_id": "case_2978946",
+        "similarity": 0.7454383373260498,
+        "customer_message": "@115888 FREAKING. PERFECT VELVET ALBUM. WHERE IS IT.",
+        "brand_response": "@821588 Hey! We’d love to have all of their albums available and hopefully we'll have them soon. In the meantime, we have some info about Spotify content here: https://t.co/0i8GpimuDa /VV",
+        "source_ids": [
+          2978948,
+          2978946
+        ],
+        "weak_intent": "feature_request_or_missing_content"
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0088",
+    "query": "@117153 sudah bayar premium tapi masih versi free",
+    "gold_intent": "billing_subscription_issue",
+    "retrieved": [
+      {
+        "case_id": "case_1715018",
+        "similarity": 0.7875547409057617,
+        "customer_message": "@117153 sudah bayar tapi akun premium belum aktif https://t.co/akrdCEec85",
+        "brand_response": "@519409 Hey! We can help out in English via Twitter, but we also have Indonesian support via email at https://t.co/ZgU70TbP8M /RH",
+        "source_ids": [
+          1715019,
+          1715018
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_1731295",
+        "similarity": 0.7255160212516785,
+        "customer_message": "@118266 Saya sudah bayar untuk Premium kemarin, sudah ada tanda terimanya tapi kenapa masih free ya tulisannya? terimakasih https://t.co/EQtkMZt9jT",
+        "brand_response": "@523099 Hi there! We can help out in English via Twitter, but we also have [LANGUAGE] support via email at https://t.co/ZgU70TbP8M /NY",
+        "source_ids": [
+          1731296,
+          1731295
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_2440984",
+        "similarity": 0.709388017654419,
+        "customer_message": "@117153 paguei Premium e a minha conta está Free.",
+        "brand_response": "@700059 Hi, help's here! We'll continue helping you out in English if that's okay. Could you DM us your email &amp; username? Keep us posted /JQ https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2440986,
+          2440984
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_1607067",
+        "similarity": 0.6955258250236511,
+        "customer_message": "Dear @118266 saya sudah berlangganan premium dan sudah terima tanda pembayaran tapi kenapa masih terdaftar di free account? Thanks",
+        "brand_response": "@493645 Hey! We can help out in English via Twitter, but we also have Indonesian support via email at https://t.co/ZgU70TbP8M /RB",
+        "source_ids": [
+          1607068,
+          1607067
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_1470153",
+        "similarity": 0.6868336200714111,
+        "customer_message": "@118266 akun jiqin, sudah bayar premium 1 bulan mandiri clickpay tapi gagal. Mohon bantuannya 🙏\n\nsekarang sudah premium karena beli lagi.",
+        "brand_response": "@461234 Hey! We can help out in English via Twitter, but we also have Indonesian support via email at https://t.co/ZgU70TbP8M /RB",
+        "source_ids": [
+          1470154,
+          1470153
+        ],
+        "weak_intent": "billing_subscription_issue"
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0081",
+    "query": "@SpotifyCares I was charged the subscription but I cant use spotify premium. Whats going on?",
+    "gold_intent": "billing_subscription_issue",
+    "retrieved": [
+      {
+        "case_id": "case_2833786",
+        "similarity": 0.9286866784095764,
+        "customer_message": "@SpotifyCares hi, Spotify premium not working even though I've paid for subscription? https://t.co/ihHh2gMbj8",
+        "brand_response": "@788864 Hey there! Could you send us a DM with your account's email address? We'll take a look backstage /MA https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2833787,
+          2833786
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_1872482",
+        "similarity": 0.9111316204071045,
+        "customer_message": "@SpotifyCares I just paid my premium account and it doesn't work",
+        "brand_response": "@559150 Hey there! Could you send us a DM with your account's email address or username? We'll take a look backstage /FR https://t.co/ldFdZR1cbT",
+        "source_ids": [
+          1872483,
+          1872482
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_2030149",
+        "similarity": 0.9111218452453613,
+        "customer_message": "@SpotifyCares i already paid my spotify premium but it can't be used. why should i do?",
+        "brand_response": "@600335 Hi Augie, help's here! Can you fire over your account's email address via DM? We'll check under the hood /NY https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2030150,
+          2030149
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_2032035",
+        "similarity": 0.9042345285415649,
+        "customer_message": "@SpotifyCares I already upgrade to Spotify premium and payment was successful. But why,my account still spotify free not premium? Help 😭",
+        "brand_response": "@600878 Hey Yogo, help's here! We'd suggest deleting your previous tweet as it contains private info. Could you DM it to us instead? /GU https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2032036,
+          2032035
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_393183",
+        "similarity": 0.9021645188331604,
+        "customer_message": "@SpotifyCares my Spotify premium isn't working help",
+        "brand_response": "@209122 Hi, we've just replied to your DM. We'll carry on chatting there /SY",
+        "source_ids": [
+          393184,
+          393183
+        ],
+        "weak_intent": "billing_subscription_issue"
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0049",
+    "query": "@SpotifyCares Is you close account page down permanently? 2 days in a row I've been trying to close an account.",
+    "gold_intent": "cancellation_or_refund_request",
+    "retrieved": [
+      {
+        "case_id": "case_1141936",
+        "similarity": 0.8247332572937012,
+        "customer_message": "@SpotifyCares I can't close my spotify Premium on account __email__.\nWhy ?",
+        "brand_response": "@388795 Hey! We'd advise to delete that tweet as it contains sensitive info. Can you DM it to us instead? /SJ https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1141937,
+          1141936
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_1840414",
+        "similarity": 0.8227269649505615,
+        "customer_message": "@SpotifyCares I re opened a closed account but i am not longer able to close it again. help?",
+        "brand_response": "@206393 Hey! Can you tell us more about what's happening? Also, if you could DM us your account's email address or username, that'd be great /NS https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1840416,
+          1840414
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_1739277",
+        "similarity": 0.8104702830314636,
+        "customer_message": "@SpotifyCares Can you help me close my Free account?",
+        "brand_response": "@524915 You bet! Could you DM us your account's username and email address? We'll take a look backstage /JX https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1739276,
+          1739274,
+          1739275,
+          1739277
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_2041905",
+        "similarity": 0.7939186692237854,
+        "customer_message": "@SpotifyCares Is this really my only means of contacting you? Do you not have a support email? Close to closing my account.",
+        "brand_response": "@603765 Hey! We don't have phone support, but we can help out here at Twitter. We also have support via email or chat at https://t.co/ZgU70TbP8M /AR",
+        "source_ids": [
+          2041906,
+          2041905
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_2285099",
+        "similarity": 0.7870569229125977,
+        "customer_message": "@SpotifyCares I want to close my spotify account but i no longer have access to my email account. HELP",
+        "brand_response": "@664018 Hey there, help's here! Could you DM us your account's email address and username? We'll take a look backstage /CG https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2285100,
+          2285099
+        ],
+        "weak_intent": "account_access_issue"
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0244",
+    "query": "@SpotifyCares Almost all of my playlists just disappeared. Is there a way that I can try to recover them?",
+    "gold_intent": "account_data_loss",
+    "retrieved": [
+      {
+        "case_id": "case_782568",
+        "similarity": 0.9468080997467041,
+        "customer_message": "@SpotifyCares I got access back via support, but still lost all playlists I followed. Is there any way to recover these?",
+        "brand_response": "@306813 Hey, that's not cool! We've just sent you a bit more info over DM. We'll carry on helping out there /GN",
+        "source_ids": [
+          782569,
+          782568
+        ],
+        "weak_intent": "billing_subscription_issue"
+      },
+      {
+        "case_id": "case_1806919",
+        "similarity": 0.9396288394927979,
+        "customer_message": "@SpotifyCares on 10/5 all my playlists were deleted (without my knowledge), including a ton of followed playlists. How can I recover them?",
+        "brand_response": "@542857 Hi Quentin! Could you send us a DM with your account's email address or username? We'll take a look backstage /DR https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1806920,
+          1806919
+        ],
+        "weak_intent": null
+      },
+      {
+        "case_id": "case_1723526",
+        "similarity": 0.9139789342880249,
+        "customer_message": "@SpotifyCares hi all of my saved music and playlists disappeared from my library. is there any way to get it back?",
+        "brand_response": "@521368 Hey! Can you fire over your account's email address or username via DM? We'll take a look backstage /RC https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1723527,
+          1723526
+        ],
+        "weak_intent": null
+      },
+      {
+        "case_id": "case_262656",
+        "similarity": 0.9097362756729126,
+        "customer_message": "I need some help with my spotify acount. I lost all my playlists. How can I get them back? @SpotifyCares",
+        "brand_response": "@178568 Hey Håkon! We've just sent you a bit more info over DM. We'll carry on helping out there /CO",
+        "source_ids": [
+          262657,
+          262656
+        ],
+        "weak_intent": null
+      },
+      {
+        "case_id": "case_1622791",
+        "similarity": 0.9095903038978577,
+        "customer_message": "@SpotifyCares @497162 all my playlists disappeared ... but no help in the last 2 days..",
+        "brand_response": "@497161 Hey! Sorry for the delay. We've sent a DM your way; check it out 🙂 /L",
+        "source_ids": [
+          1622802,
+          1622800,
+          1622794,
+          1622791
+        ],
+        "weak_intent": null
+      }
+    ]
+  },
+  {
+    "query_id": "gold_0039",
+    "query": "@115888 my account won’t allow me to log in on any device! Pls help!",
+    "gold_intent": "account_access_issue",
+    "retrieved": [
+      {
+        "case_id": "case_1292217",
+        "similarity": 0.8920657634735107,
+        "customer_message": "@115888 I've been having trouble logging in with my account and I've reset my password many times and log into other devices and won't work",
+        "brand_response": "@422191 Hi, help's arrived! Could you DM us your email address and username? We'll take a look backstage /JQ https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1292219,
+          1292217
+        ],
+        "weak_intent": "playback_technical_issue"
+      },
+      {
+        "case_id": "case_2293011",
+        "similarity": 0.7761101722717285,
+        "customer_message": "@115888 I can't login to my account... everytime I do it just kicks me out....",
+        "brand_response": "@665881 Hi there! Can you DM us your account's email address or username? We'll take a look backstage /GT https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2293012,
+          2293011
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_2555582",
+        "similarity": 0.7646490931510925,
+        "customer_message": "@115888 @117168 I am going crazy. Someone is logged into my account. I’ve tried log out all devices. They even upgraded my account...",
+        "brand_response": "@725687 Hi Mike! Can you DM us your account's username or email address? We'll take a look backstage /MC https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2555583,
+          2555582
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_1147710",
+        "similarity": 0.7620406150817871,
+        "customer_message": "@115888 cant log in it wont accept my email address !!! Your still billing me with no access ??",
+        "brand_response": "@390105 Hi there. Can you DM us your account's email address? We'll take a look backstage /LM https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          1147711,
+          1147710
+        ],
+        "weak_intent": "account_access_issue"
+      },
+      {
+        "case_id": "case_2985581",
+        "similarity": 0.7574315071105957,
+        "customer_message": "@115888 having trouble logging into my account",
+        "brand_response": "@823248 Hey there! Can you fire over your account's email address or username via DM? We'll see what we can suggest /RC https://t.co/ldFdZRiNAt",
+        "source_ids": [
+          2985582,
+          2985581
+        ],
+        "weak_intent": "playback_technical_issue"
+      }
+    ]
+  }
+]

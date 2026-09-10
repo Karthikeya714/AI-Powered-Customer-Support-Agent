@@ -8,12 +8,12 @@ pydantic>=2.0
 scikit-learn>=1.3
 scipy>=1.11
 
-# Embeddings / vector search (added when Phase 9 is implemented)
-# sentence-transformers>=2.2
-# faiss-cpu>=1.7
+# Embeddings / vector search (Phase 9: local, free, no rate limits)
+sentence-transformers>=2.2
+faiss-cpu>=1.7
 
-# LLM client (added when Phase 8 is implemented)
-# anthropic>=0.40
+# LLM client (Phase 8: intent classifier, using Google Gemini's free tier)
+google-genai>=0.3.0
 
 # Demo (added when Phase 18 is implemented)
 # streamlit>=1.30

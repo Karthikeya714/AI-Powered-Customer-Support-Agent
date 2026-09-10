@@ -511,3 +511,234 @@ intents that got zero weak-label coverage). This gap itself is a useful
 data point for Phase 16 ("what is misleading about my headline number"):
 the validation score alone would overstate how well this baseline
 actually performs.
+
+## 2026-09-09 — AI intent classifier uses Google Gemini's free tier, not Claude
+
+**Decision:** `src/intents/classifier.py` calls Google's Gemini API
+(`google-genai` SDK, `gemini-3.6-flash` model) instead of Anthropic Claude,
+even though `.env.example`'s original default (from Phase 0) was
+`claude-sonnet-5`.
+
+**Reason:** No Anthropic API key was available in this environment, and
+Anthropic requires a billing method on file to issue one. The user chose
+to use Gemini's free tier instead of adding a paid key. `LLM_API_KEY`/
+`LLM_MODEL` were already provider-agnostic names (Phase 0), so this only
+meant swapping the client implementation and the model string, not
+restructuring config.
+
+**Alternatives considered:** Groq's free tier (open-weight models) and a
+local model via Ollama — both viable; Gemini was chosen by the user, and
+its native structured-output support (JSON schema with enum constraints)
+made it a clean fit for "never invent a new intent label."
+
+**Trade-off:** The project's config default no longer matches Claude. This
+is stated explicitly here rather than silently left inconsistent with the
+architecture doc's original example — the config remains provider-agnostic
+so switching back (or adding Claude as an option) only touches
+`.env`/`classifier.py`, not the rest of the pipeline.
+
+**Note:** `gemini-2.5-flash` (the initially planned model) returned a 404
+on the first real API call — "no longer available to new users," with the
+error message itself recommending `gemini-3.6-flash`. Caught by an actual
+smoke-test call before running the full golden set, not by trusting
+documentation alone (docs and the live API disagreed on model naming by
+the time of implementation).
+
+## 2026-09-09 — "Never invent a label" enforced via JSON schema enum, not just prompt wording
+
+**Decision:** `IntentPrediction` (the Pydantic model given to Gemini as
+`response_format.schema`) types `intent` as a dynamically-built `Enum` over
+exactly the 12 `INTENTS` keys, so the JSON schema sent to the model
+contains an `enum` constraint — an out-of-vocabulary label fails Gemini's
+structured-output validation (or, if it somehow slipped through, fails
+`IntentPrediction.model_validate_json` on our side) rather than silently
+returning a string that isn't one of the 12 intents.
+
+**Reason:** The plan requires the classifier to "avoid inventing new
+intent labels." A prompt instruction alone is a request the model can
+still ignore; a schema constraint is enforced by the response-generation
+mechanism itself, which is meaningfully stronger.
+
+**Alternatives considered:** Prompt-only enforcement plus a post-hoc
+string-match validation step — rejected as strictly weaker for the same
+implementation cost; there's no reason not to use the schema constraint
+when the API supports it natively.
+
+**Trade-off:** None identified.
+
+## 2026-09-09 — Confidence score doubles as the ambiguity signal; no separate "ambiguous" flag
+
+**Decision:** The classifier's system prompt instructs the model to use
+confidence below 0.5 for genuinely ambiguous, off-topic, or non-English
+messages, rather than adding a separate boolean `ambiguous` field to the
+output schema. `MIN_INTENT_CONFIDENCE` (already in `src/config.py` since
+Phase 0) is the threshold Phase 11's escalation logic will read.
+
+**Reason:** The plan's escalation signals explicitly include "low intent
+confidence" as its own criterion — a single confidence score already
+carries this information, and a redundant second field would just be
+two representations of the same underlying judgment with no clear rule
+for resolving disagreement between them.
+
+**Alternatives considered:** Adding `ambiguous: bool` anyway for
+explicitness — rejected; smoke-testing (see below) confirmed the model
+reliably drops confidence for non-English input specifically because the
+prompt asked it to, so the single-field design works as intended.
+
+**Trade-off:** None identified — verified via smoke test before committing
+to the full golden-set run: a non-English message scored confidence 0.45
+with reasoning explicitly citing the language barrier as the reason.
+
+## 2026-09-09 — Local raw-prediction cache to avoid re-spending API calls
+
+**Decision:** `classify_golden_set()` reads/writes
+`artifacts/predictions/ai_classifier_raw_cache.jsonl`, keyed by golden
+example id, and only calls the API for ids missing from the cache or
+whose cached entry has a non-null `error`. A 2-second pacing delay runs
+between calls.
+
+**Reason:** Classifying 229 examples against a live free-tier API takes
+real wall-clock time and consumes free-tier quota; re-running the driver
+during development (e.g. after fixing a bug in metric computation
+downstream) shouldn't have to re-classify examples that already succeeded.
+The pacing delay is a courtesy against free-tier rate limits, on top of
+the classifier's own per-call retry/backoff for transient failures.
+
+**Alternatives considered:** No caching, re-run everything every time —
+rejected as wasteful given the classifier itself is deterministic-ish
+(temperature not explicitly pinned) but expensive to re-query, and
+reproducibility doesn't require re-hitting the network if a cached,
+successful result already exists.
+
+**Trade-off:** The cache can go stale if the prompt or schema changes
+without also being cleared — acceptable since it's a local, gitignored-if-
+large, easily-deleted file, not a source of truth.
+
+## 2026-09-10 — Switched Phase 8's model twice more after hitting per-model free-tier quotas
+
+**Decision:** Final model: `gemini-3.5-flash-lite` (not `gemini-3.6-flash`,
+the model chosen when Phase 8 was first implemented).
+
+**Reason:** Running the classifier against the full 229-example golden set
+surfaced two real problems undocumented until they were hit live:
+1. `gemini-2.5-flash` (the originally planned default) 404'd on the very
+   first real call — "no longer available to new users" (already recorded
+   above).
+2. `gemini-3.6-flash` worked for ~30-56 calls, then started failing almost
+   every subsequent call with a 429 `quota exceeded... limit: 20` error.
+   Increasing the pacing delay between calls (2s → 3.5s, comfortably under
+   a 20-requests/minute reading of that message) did not fix it — the same
+   error persisted for many minutes regardless of pacing, which only makes
+   sense if the limit is a **daily** quota, not per-minute, despite the
+   error text's "retry in 42s" phrasing (misleading — that's a generic
+   retry hint, not the actual quota reset time).
+3. Switching to `gemini-3.5-flash-lite` immediately worked with no 429s
+   across a 10-call rapid-fire stress test, confirming free-tier quota is
+   tracked **per model**, not per API key/project — `flash-lite` variants
+   get a separate, far more generous allotment than the newer `flash`
+   tier.
+
+**Alternatives considered:** Waiting out the `gemini-3.6-flash` quota
+(unknown reset time, possibly up to 24h) — rejected, since switching
+models was immediately verifiable and unblocked the run in minutes instead
+of an indefinite wait. Batch API (mentioned in Gemini's own docs as having
+separate, more generous limits) — not pursued; `interactions.create` was
+already working end-to-end and switching APIs entirely was unnecessary
+once the per-model quota theory was confirmed correct.
+
+**Trade-off:** `flash-lite` is a smaller/cheaper model than `flash` —
+plausibly slightly less capable at nuanced classification. Spot-checked
+before committing to the full run: 10/10 correct classifications across a
+manually-verified mix of all 12 intents, so no accuracy concern observed
+in practice for this task. The `ai_classifier_raw_cache.jsonl` entries
+from the two earlier (broken/mixed-model) runs were deleted rather than
+partially reused, so the final result set is from one consistent model,
+not silently blended across three.
+
+## 2026-09-10 — Embeddings run locally, not via an LLM API
+
+**Decision:** `src/retrieval/embeddings.py` uses a local
+`sentence-transformers` model (`all-MiniLM-L6-v2`, already the Phase 0
+config default) rather than an embeddings API endpoint from Gemini or any
+other provider.
+
+**Reason:** The project already depends on one rate-limited free-tier LLM
+API for intent classification (Phase 8), where quota limits turned out to
+be a real, time-consuming obstacle (see the entry above). Embeddings don't
+need an LLM's reasoning capability — a local model avoids a second network
+dependency, has no rate limits on ~37k documents, downloads once (~90MB)
+and caches locally, and keeps retrieval fully reproducible offline.
+
+**Alternatives considered:** Gemini's embedding endpoint
+(`gemini-embedding-2-preview`, confirmed free-tier in Phase 8's model
+research) — rejected given the demonstrated fragility of this project's
+free-tier LLM quota; embedding 36,723 documents through a rate-limited API
+would risk the same multi-hour quota problem, for a task a small local
+model handles in ~2 minutes with no external dependency at all.
+
+**Trade-off:** `all-MiniLM-L6-v2` (384 dimensions) is a smaller, older
+embedding model than current API-hosted options, and downloads ~90MB on
+first use. Retrieval quality observed in practice is strong (mean top-1
+cosine similarity 0.858 across the golden set; a spot-checked
+`account_security_compromise` query correctly retrieved other
+hacked-account cases at 0.70+ similarity), so this trade-off did not show
+up as a real limitation for this project's scale and domain.
+
+## 2026-09-10 — Exact FAISS search (IndexFlatIP), not an approximate index
+
+**Decision:** `src/retrieval/index.py` uses `faiss.IndexFlatIP` (exact
+brute-force inner-product search over L2-normalized vectors, i.e. exact
+cosine similarity) rather than an approximate index like IVF or HNSW.
+
+**Reason:** The knowledge pool is ~37k documents at 384 dimensions —
+small enough that exact search completes in well under a second per
+query. Approximate indexes trade a small amount of recall for speed at
+much larger scale (millions of vectors); at this project's scale that
+trade-off has no benefit and would only add tuning complexity (index
+parameters, recall/speed trade-off knobs) with nothing to show for it —
+directly against "prefer simple implementations that can be explained in
+an interview."
+
+**Alternatives considered:** `IndexIVFFlat` — rejected as unnecessary at
+this scale; would need its own training step and parameter tuning
+(`nlist`, `nprobe`) for a speed gain that isn't needed.
+
+**Trade-off:** Would not scale gracefully to a much larger knowledge base
+(millions of cases) without revisiting this choice — acceptable and
+explicitly noted, since the project's own scope (one brand, a justified
+subset, not the full ~3M-tweet dataset) means this ceiling is unlikely to
+be hit.
+
+## 2026-09-10 — Retrieval quality measured via similarity stats + an intent-agreement proxy, not manual relevance labels
+
+**Decision:** `evaluation/evaluate_retrieval.py` reports two things: (1)
+similarity score statistics (top-1 and average-top-k) across all golden
+queries, and (2) "intent-agreement@k" — the fraction of top-k retrieved
+cases whose Phase 4 weak intent label matches the query's Phase 5
+`gold_intent`. No new manual relevance-labeling pass was created.
+
+**Reason:** The plan says to measure retrieval quality "where feasible"
+and explicitly allows stating a limitation if formal relevance labels are
+hard to construct. Manually judging relevance for 229 queries × 5 retrieved
+cases each (1,145 judgments) would be a large new labeling effort with its
+own leakage risk (it would effectively be grading retrieval against
+labels created by looking at retrieval's own output). The two metrics used
+instead are both derived from data that already exists for other reasons
+(Phase 4/5 labels), at zero additional labeling cost.
+
+**Alternatives considered:** Skipping retrieval evaluation entirely (the
+plan permits stating retrieval labels are infeasible) — rejected, since a
+reasonable proxy was available cheaply; a full manual relevance study —
+deferred as out of scope for this phase, could be added later if time
+permits (Phase 19 "what we'd do with one more week" candidate).
+
+**Trade-off:** The intent-agreement proxy inherits the Phase 4/7 weak-label
+coverage gap by construction — it reads exactly 0.0 for the 3 intents with
+no weak-label coverage, which looks like a retrieval failure but isn't
+(verified by spot-checking: `account_security_compromise` queries retrieve
+genuinely relevant hacked-account cases at 0.70+ similarity; those cases
+just don't carry a `weak_intent` value the proxy can compare against).
+Documented explicitly in the README and here rather than left as an
+unexplained low number — an example of the project's own "misleading
+headline number" principle (Phase 16) showing up one intent-taxonomy layer
+below where it was first observed in Phase 7.

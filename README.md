@@ -11,10 +11,12 @@ trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
 **Status:** Phase 0 (setup) through Phase 7 (TF-IDF + Logistic Regression
-baseline) complete. Later sections of this README (results, reproduction
-steps) will be filled in as each phase lands — see
-`Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
-and `DECISION_LOG.md` for engineering decisions.
+baseline) complete, plus Phase 9 (historical case retrieval) — Phase 8 (AI
+intent classifier) is implemented and committed separately once its golden-set
+evaluation run finishes (see `DECISION_LOG.md`). Later sections of this
+README (results, reproduction steps) will be filled in as each phase
+lands — see `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the
+full phase plan and `DECISION_LOG.md` for engineering decisions.
 
 ## Scope
 
@@ -79,8 +81,8 @@ Key variables:
 | Variable | Purpose | Default |
 |---|---|---|
 | `LLM_API_KEY` | API key for the LLM used in intent classification / generation / judging (added Phase 8+) | — |
-| `LLM_MODEL` | LLM model name | `claude-sonnet-5` |
-| `EMBEDDING_MODEL` | Embedding model for retrieval (added Phase 9+) | `all-MiniLM-L6-v2` |
+| `LLM_MODEL` | LLM model name — Google Gemini's free tier (see `DECISION_LOG.md` for why, and for the model-string saga) | `gemini-3.5-flash-lite` |
+| `EMBEDDING_MODEL` | Local sentence-transformers embedding model for retrieval (Phase 9+) — no API key needed | `all-MiniLM-L6-v2` |
 | `SELECTED_BRAND` | The single brand this project targets (set in Phase 2) | — |
 | `TOP_K` | Number of historical cases retrieved per query | `5` |
 | `MIN_INTENT_CONFIDENCE` | Escalation threshold, tuned on validation data | `0.6` |
@@ -216,6 +218,47 @@ Phase 4's decision log). The confusion matrix
 intents' true examples mostly fall back to `account_access_issue` — the
 closest available trained category. Writes the same predictions/metrics/
 confusion-matrix-plot artifact triad as the majority baseline.
+
+### Retrieval (Phase 9)
+
+Build the FAISS vector index over knowledge-split cases (golden_pool is
+never indexed — see `src/retrieval/index.py`):
+
+```bash
+python -m scripts.build_index
+```
+
+Embeds all 36,723 knowledge-split customer messages locally with
+`sentence-transformers` (no API key, no rate limits) and writes
+`data/index/knowledge.faiss` + `data/index/knowledge_metadata.jsonl`
+(gitignored — regenerate with the command above).
+
+Then evaluate retrieval quality on the golden set:
+
+```bash
+python -m scripts.evaluate_retrieval
+```
+
+**Result: mean top-1 similarity 0.858** (median 0.868) across all 229
+golden queries — the index reliably finds close semantic matches. Writes
+`artifacts/metrics/retrieval_stats.json` and
+`artifacts/predictions/retrieval_examples.json` (10 example queries with
+their top-5 retrieved cases).
+
+There's no manually-labeled retrieval-relevance ground truth, so retrieval
+quality is also measured with a proxy — intent-agreement@k: do the top-k
+retrieved cases share the query's `gold_intent` (using Phase 4's weak
+intent labels on the knowledge side)? This inherits the same known gap as
+the Phase 7 baseline: for the 3 intents with zero weak-label training
+coverage, agreement reads as 0.0 — **not because retrieval fails for
+them**, but because the proxy metric itself has no positively-labeled
+comparison data. Spot-checking confirms retrieval works fine there too:
+querying an `account_security_compromise` example (a hacked-account
+report) correctly retrieves other hacked-account cases at 0.70-0.72
+similarity, entirely via semantic embedding similarity — retrieval is
+more robust to the labeling gap than the classifiers were, since it never
+depends on the weak-label taxonomy at all. See
+`artifacts/predictions/retrieval_examples.json` for the full example.
 
 ## Running tests
 

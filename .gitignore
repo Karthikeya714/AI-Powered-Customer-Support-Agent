@@ -30,6 +30,11 @@ data/processed/support_cases_with_intents.jsonl
 *.index
 data/index/
 
+# LLM classifier raw-prediction resumability cache (implementation detail,
+# not a phase deliverable — artifacts/predictions/ai_classifier_predictions.jsonl
+# is the real output)
+artifacts/predictions/ai_classifier_raw_cache.jsonl
+
 # Logs
 *.log
 logs/
