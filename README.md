@@ -16,10 +16,54 @@ baseline, TF-IDF baseline, AI intent classifier, historical case
 retrieval, grounded reply generation, escalation decision, the integrated
 agent, the evaluation harness, LLM-as-judge with human agreement, failure
 analysis, the "misleading headline number" self-critique, a complete
-decision log, and a Streamlit demo). The final report (Phase 19) and
+decision log, and a Streamlit demo) — plus one post-Phase-18 reliability
+addition (automatic primary/fallback LLM model switching, see
+[Configuration](#configuration)). The final report (Phase 19) and
 reproducibility check (Phase 20) are still to come — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
+
+## Contents
+
+- [Results at a glance](#results-at-a-glance)
+- [Scope](#scope)
+- [Project layout](#project-layout)
+- [Setup](#setup)
+- [Configuration](#configuration)
+- [Data preparation](#data-preparation)
+  - [Baselines](#baselines)
+  - [AI intent classifier (Phase 8)](#ai-intent-classifier-phase-8)
+  - [Retrieval (Phase 9)](#retrieval-phase-9)
+  - [Grounded reply generation (Phase 10)](#grounded-reply-generation-phase-10)
+  - [Escalation decision (Phase 11)](#escalation-decision-phase-11)
+  - [The complete agent (Phase 12)](#the-complete-agent-phase-12)
+  - [Evaluation harness (Phase 13)](#evaluation-harness-phase-13)
+  - [LLM-as-judge + human agreement (Phase 14)](#llm-as-judge--human-agreement-phase-14)
+  - [Failure analysis (Phase 15)](#failure-analysis-phase-15)
+  - [What is misleading about my headline number? (Phase 16)](#what-is-misleading-about-my-headline-number-phase-16)
+- [Demo (Phase 18)](#demo-phase-18)
+- [Running tests](#running-tests)
+- [Roadmap](#roadmap)
+
+## Results at a glance
+
+| Metric | Result | Detail |
+|---|---:|---|
+| AI intent classifier accuracy | **84.7%** (macro F1 0.846) | vs. 12.2% majority baseline, 56.8% TF-IDF baseline — [detail](#ai-intent-classifier-phase-8) |
+| Retrieval mean top-1 similarity | **0.858** | across all 229 golden queries — [detail](#retrieval-phase-9) |
+| Reply groundedness (LLM judge) | **4.90 / 5** | no_hallucination 4.95/5 — [detail](#llm-as-judge--human-agreement-phase-14) |
+| Judge-vs-human agreement (groundedness) | **73%** exact match, 93% within 1 point | strongest agreement on the safety-relevant dimensions — [detail](#llm-as-judge--human-agreement-phase-14) |
+| **Escalation accuracy** | **60.3%** | the number that actually predicts deployment safety — see below |
+| **False auto-handle rate** | **64.8%** | root-caused, deliberately *not* patched (would mean tuning against the golden set) — [detail](#evaluation-harness-phase-13) |
+
+The single most important finding in this project is that the last two
+rows exist at all: **84.7% intent accuracy looks good in isolation, but
+the system is only right about *when it's safe to act automatically* 60.3%
+of the time** — and their 95% confidence intervals don't overlap, so
+that gap isn't noise. See
+[`docs/misleading_headline_number.md`](docs/misleading_headline_number.md)
+for four independently-quantified reasons the 84.7% headline overstates
+the system, computed against real project data rather than asserted.
 
 ## Scope
 
@@ -81,16 +125,23 @@ codebase should read `os.environ` directly.
 
 Key variables:
 
-| Variable | Purpose | Default |
+| Variable | Purpose | Shipped in `.env.example` |
 |---|---|---|
-| `LLM_API_KEY` | API key for the LLM used in intent classification / generation / judging (added Phase 8+) | — |
-| `LLM_MODEL` | LLM model name — Google Gemini's free tier (see `DECISION_LOG.md` for why, and for the model-string saga) | `gemini-3.5-flash-lite` |
+| `LLM_API_KEY` | API key for the LLM used in intent classification / generation / judging (added Phase 8+) | — (fill in your own) |
+| `LLM_MODEL` | Primary LLM model — Google Gemini's free tier (see `DECISION_LOG.md` for why, and for the model-string saga) | `gemini-3.5-flash-lite` |
+| `LLM_FALLBACK_MODEL` | Second model tried automatically if `LLM_MODEL` exhausts its retries (e.g. its free-tier daily quota runs out) — same API key, no new credentials needed. Leave blank to disable. See `DECISION_LOG.md`'s "automatic primary/fallback LLM model switching" entry | `gemini-3.1-flash-lite` |
 | `EMBEDDING_MODEL` | Local sentence-transformers embedding model for retrieval (Phase 9+) — no API key needed | `all-MiniLM-L6-v2` |
-| `SELECTED_BRAND` | The single brand this project targets (set in Phase 2) | — |
+| `SELECTED_BRAND` | The single brand this project targets (set in Phase 2) | `SpotifyCares` |
 | `TOP_K` | Number of historical cases retrieved per query | `5` |
 | `MIN_INTENT_CONFIDENCE` | Escalation threshold, tuned on validation data | `0.6` |
-| `MIN_RETRIEVAL_SIMILARITY` | Escalation threshold, tuned on validation data | `0.5` |
+| `MIN_RETRIEVAL_SIMILARITY` | Escalation threshold, recalibrated in Phase 11 from a 0.5 placeholder (see `DECISION_LOG.md`) | `0.70` |
 | `RANDOM_SEED` | Seed for all deterministic sampling | `42` |
+
+If a variable is left unset, `src/config.py` falls back to its own
+hardcoded default rather than erroring — those code-level defaults
+predate Phase 11's recalibration and are intentionally *not* kept in
+sync with the tuned values above, so always use `.env.example`'s values
+rather than assuming an unset variable is safe.
 
 ## Data preparation
 
@@ -510,12 +561,23 @@ python -m src.agent "My music keeps stopping every few seconds"
 pytest
 ```
 
-Tests run against a small synthetic CSV fixture (`tests/test_data.py`), not
-the real dataset, so they pass without downloading anything.
+86 tests, all offline — LLM-calling code (classifier, generator, judge) is
+covered via dependency injection and mocking, never real API calls. Tests
+run against a small synthetic CSV fixture (`tests/test_data.py`), not the
+real dataset, so they pass without downloading anything.
 
 ## Roadmap
 
-See `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full 20-phase
-plan. Phases are implemented one at a time and in order; this README will
-grow a "Data preparation", "How to build index", "How to run agent", "How to
-run evaluation", and "Headline results" section as those phases are built.
+See `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full
+20-phase plan and `DECISION_LOG.md` for the reasoning behind every
+non-obvious choice made along the way (48 entries, indexed at the top of
+that file). Remaining work:
+
+- **Phase 19 — final report.** `REPORT.md` is currently still Phase 0's
+  placeholder. Most of its required content already exists, scattered
+  across this README, `DECISION_LOG.md`, and `docs/*.md` — Phase 19 is
+  primarily consolidation, not new analysis.
+- **Phase 20 — reproducibility check.** Verifying a fresh clone can
+  reproduce the headline results above in under 15 minutes, following
+  exactly the [Setup](#setup) and [Data preparation](#data-preparation)
+  steps in this README, hasn't been done yet.
