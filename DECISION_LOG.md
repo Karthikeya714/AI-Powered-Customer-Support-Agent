@@ -1188,3 +1188,188 @@ confusion-matrix plotting sized figures using a formula tuned for the
 unreadably tiny, overlapping 2x2 plot for the escalation confusion
 matrix. Given a `max(4.0, ...)` floor and softened label rotation for
 small label counts.
+
+## 2026-09-10 — Phase 14's judge hit a hard daily quota; switched to a sibling model
+
+**Decision:** `scripts/run_llm_judge.py` uses `gemini-3.1-flash-lite`
+(`JUDGE_MODEL`, a script-level constant) instead of `settings.llm_model`
+(`gemini-3.5-flash-lite`, the classifier/generator default).
+
+**Reason:** `gemini-3.5-flash-lite`'s free tier enforces a **500
+requests/day** cap (confirmed by the live error message: `"limit: 500,
+model: gemini-3.5-flash-lite"`), and by the time the judge run reached
+example 55/170, the same day's Phase 8 (229 classification calls) + Phase
+10 (2 generation runs, ~30 calls) + Phase 13 (~170 generation calls) had
+already consumed essentially the entire daily allotment. Unlike the
+earlier `gemini-3.6-flash` incident (Phase 8), waiting out a short
+backoff does nothing here — it's a daily reset, not a per-minute window,
+so retrying just burns through the remaining retry budget for no benefit.
+Verified this diagnosis live before committing to a fix: a single test
+call on `gemini-3.1-flash-lite` succeeded immediately with no 429,
+confirming quota is tracked per-model, consistent with the Phase 8
+finding.
+
+**Why a different judge model is acceptable, not a compromise:** the
+judge is an intentionally independent scoring pass — it isn't meant to
+share a model with the component it's grading. If anything, using a
+different (but comparable, same flash-lite tier) model is marginally
+*more* independent than sharing the generator's exact model, not less.
+
+**Alternatives considered:** Waiting for the daily quota to reset
+(unknown exact reset time, potentially hours) — rejected as unproductive
+idle time when a working alternative was one test call away. Switching
+the project's shared `LLM_MODEL` default instead of a judge-specific
+constant — rejected: today's Phase 8/10/12/13 results were produced with
+`gemini-3.5-flash-lite`, and changing the shared default now would create
+a confusing mismatch between what's documented and what a fresh run
+would actually use tomorrow (when `gemini-3.5-flash-lite`'s quota resets)
+— a script-local override for the judge only avoids that.
+
+**Trade-off:** The 51 examples judged before the quota was hit used
+`gemini-3.5-flash-lite`; the remaining ~119 used `gemini-3.1-flash-lite`.
+Both are Google flash-lite-tier models with comparable capability, and
+`scripts/run_llm_judge.py`'s cache-resume design means this split
+happened transparently (same rubric, same schema) rather than requiring
+a full re-run. Not expected to materially affect aggregate judge
+statistics, but noted here rather than silently glossed over.
+
+## 2026-09-10 — Phase 15 written from real Phase 8/9/10/13 data, zero new API calls
+
+**Decision:** `docs/failure_analysis.md`'s five failures were mined
+directly from already-collected evaluation artifacts
+(`golden_predictions.jsonl`, `ai_classifier_predictions.jsonl`) while
+Phase 14's judge run continued in the background, rather than waiting for
+it to finish or making any new live calls.
+
+**Reason:** Failure analysis doesn't need the LLM judge's scores — it
+needs real system outputs to explain, and Phase 13 already produced 229
+of them. Four of the five failures selected are escalation-rule gaps
+(the dominant, highest-volume failure category, 68/229 examples) with
+concrete customer messages, predicted vs. expected results, and a
+specific hypothesis + possible fix for each — not abstract categories.
+The fifth (corrupted multi-part-tweet evidence producing a malformed
+reply) reuses the finding already made and deliberately left unfixed in
+Phase 10.
+
+**Notable methodological point carried through from Phase 13:** the
+possible fixes suggested for the escalation-rule gaps are explicitly
+framed as things to calibrate on a *held-out validation set*, not as
+patches to apply directly from reading these specific golden failures —
+consistent with Phase 13's decision not to patch `decision.py` after
+seeing exactly which examples it was failing.
+
+## 2026-09-10 — Found and fixed a real bug: the LLM judge was scoring against evidence with the text stripped out
+
+**Decision:** `golden_predictions.jsonl`'s `retrieved_cases` field only
+ever stored `{case_id, similarity}` (`evaluation/run_evaluation.py`
+deliberately kept that file lean — see the earlier decision log entry).
+`scripts/run_llm_judge.py` and `scripts/sample_human_eval.py` were both
+passing that stripped-down structure straight into the judge prompt,
+which needs `customer_message`/`brand_response` text per retrieved case
+to actually assess groundedness. Fixed by adding
+`src/retrieval/index.load_case_metadata_by_id()` (a case_id -> full
+metadata lookup over the retrieval index's already-saved
+`knowledge_metadata.jsonl`) and using it to enrich `retrieved_cases`
+back to full evidence text before building any judge or human-eval-
+template prompt.
+
+**How this was caught:** not by inspection — by the numbers looking
+wrong. A first pass produced human-vs-LLM agreement statistics that were
+implausibly bad (correctness exact-match 20%, tone Pearson correlation
+*negative* -0.158, 56 disagreements of >=2 points across 150 scored
+cells). Rather than write that up as "the judge is unreliable," the raw
+per-example LLM justifications were read directly, and several literally
+said things like *"the provided historical evidence is completely
+blank"* and *"the provided evidence contains no information"* — for
+examples whose retrieved cases very much existed and were highly similar
+(0.94-1.0). That's what surfaced the bug: the judge was being asked to
+verify groundedness against evidence it could not actually see, and was
+(correctly, given what it was shown) scoring accordingly.
+
+**Also caught by the same bug:** the first human-scoring pass
+(`data/judge/human_eval_scores.jsonl`, since deleted and redone) used
+the same stripped-down template and was therefore also scoring
+groundedness without the actual evidence text to check against — general
+familiarity with the dataset's reply patterns was substituting for
+verifying *this specific* evidence, which is not the same thing. Both
+the LLM judge run (170 examples) and the human-eval sample were
+re-generated and redone from scratch after the fix, discarding the
+invalid first pass entirely rather than only redoing the disagreeing
+cases.
+
+**Why this belongs in the decision log and not just quietly fixed:** it's
+a direct, concrete instance of the project's own stated principle —
+"when a result is unexpectedly [bad], investigate possible [bugs] before
+[concluding]." An implausibly bad agreement number was treated as a
+signal to investigate, not as this phase's headline finding, and the
+investigation found a real, fixable pipeline defect rather than a genuine
+property of the LLM judge.
+
+**Trade-off:** This cost a full second live judge run (another ~170 API
+calls) and a second, genuine human-scoring pass — real time spent, but
+the alternative (reporting the pre-fix agreement numbers as a finding
+about judge trustworthiness) would have been actively wrong, not just
+imprecise.
+
+## 2026-09-10 — Phase 14 final result: strong agreement on groundedness/hallucination, weaker on correctness/helpfulness
+
+**Result (170 replies judged, 0 errors; 30-example human-agreement
+subset, correct evidence):**
+
+Judge means: correctness 4.37, groundedness 4.90, helpfulness 4.25, tone
+4.72, no_hallucination 4.95 (all much healthier than the pre-fix run's
+3.81/3.86/3.77/4.18/4.03 — see the entry above).
+
+Human-vs-LLM agreement (`artifacts/judge_results/human_agreement.json`),
+by dimension (exact-match rate / within-1-point rate / Pearson r):
+- groundedness: 73% / 93% / r=0.25
+- no_hallucination: 90% / 97% / r=0.56
+- correctness: 33% / 73% / r=0.44
+- helpfulness: 23% / 73% / r=0.48
+- tone: 40% / 100% / r=0.08
+
+**The two dimensions the plan's rubric cares most about for safety —
+groundedness and no_hallucination — show the strongest agreement.** 90%
+exact match on hallucination detection, 73% on groundedness, both with
+within-1-point rates above 90%. This is the honest basis for saying the
+judge is reasonably trustworthy specifically for the safety-critical
+question ("does this reply invent things it shouldn't"), which is the
+question Phase 10's core grounding rule exists to answer.
+
+**Correctness and helpfulness agree much less** (33%/23% exact match).
+Reading the 19 disagreements (all >=2 points) surfaces an interpretable,
+recurring pattern rather than noise: in 6 of the disagreements
+(`gold_0046`, `gold_0253`, `gold_0047`, `gold_0076`, `gold_0262`,
+`gold_0151`), the LLM scored correctness/helpfulness a full 5 while the
+human scorer gave 3 — every one of these is a generic "DM us your
+account details" template reply to a case with real underlying
+complexity (compounding problems, an unanswered specific question, a
+serious repeated-charge complaint) that the reply is grounded in
+historical precedent for, but doesn't actually engage with. The LLM
+judge appears to treat "matches the historical pattern" as sufficient
+for a high correctness/helpfulness score; the human scorer additionally
+weighed whether the reply engaged the case's specific nuance. That's a
+real, describable difference in judging philosophy, not random
+disagreement — and matches a genuine limitation of this project's
+generation approach (Phase 10/15: SpotifyCares' real historical replies
+are themselves mostly generic triage messages, so "grounded" and
+"specific" are already in tension in the source data the generator
+learns from).
+
+**Tone's near-zero correlation (r=0.08) despite 100% within-1-point
+agreement** is a statistical artifact, not a disagreement — tone scores
+from both scorers cluster tightly in the 4-5 range (low variance), and
+Pearson correlation is unstable/near-meaningless when there's little
+spread to correlate. Reported plainly rather than left to look like
+"the judge and human don't agree on tone at all," which the raw
+within-1 number contradicts.
+
+**One noteworthy self-correction during this phase:** an early
+human-scoring pass (made from a template with evidence text accidentally
+stripped — see the bug entry above) had flagged `gold_0243` as a
+downloads-vs-playlists evidence mismatch. Redone with full evidence
+visible, that reply turned out to be well-grounded — multiple retrieved
+cases genuinely support the same help article for playlist loss, not
+just downloaded songs. Updated in `docs/failure_analysis.md` with the
+correction stated explicitly rather than the earlier (wrong) claim
+silently dropped.

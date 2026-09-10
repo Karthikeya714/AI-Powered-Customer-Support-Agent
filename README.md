@@ -10,12 +10,13 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 through Phase 13 complete (setup, dataset inspection,
+**Status:** Phase 0 through Phase 15 complete (setup, dataset inspection,
 brand selection, data cleaning, intent discovery, golden set, majority
 baseline, TF-IDF baseline, AI intent classifier, historical case
 retrieval, grounded reply generation, escalation decision, the integrated
-agent, and the evaluation harness). Later sections of this README (LLM
-judge, failure analysis) will be filled in as each phase lands — see
+agent, the evaluation harness, LLM-as-judge with human agreement, and
+failure analysis). Later sections of this README (decision log summary,
+demo, final report) will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -403,6 +404,57 @@ patch) in `DECISION_LOG.md` — this is this project's own "what is
 misleading about my headline number" finding (Phase 16 material,
 surfacing here first): intent accuracy looks good in isolation; the
 number that actually predicts deployment safety does not.
+
+### LLM-as-judge + human agreement (Phase 14)
+
+```bash
+python -m scripts.run_llm_judge          # scores all 170 generated replies, 1-5 per dimension
+python -m scripts.sample_human_eval      # samples 30 for blind human scoring
+# ... human scoring happens by hand, using the SAME rubric, in data/judge/human_eval_scores.jsonl ...
+python -m scripts.compute_human_agreement
+```
+
+Judge means across 170 replies (0 errors): correctness 4.37, groundedness
+4.90, helpfulness 4.25, tone 4.72, no_hallucination 4.95.
+
+**Human-vs-LLM agreement is strongest on exactly the two dimensions that
+matter most for safety** — groundedness (73% exact match, 93% within one
+point) and no_hallucination (90% exact match, 97% within one point).
+Correctness and helpfulness agree less (33%/23% exact match) — reading
+the disagreements shows an interpretable pattern, not noise: the LLM
+judge tends to score a reply highly whenever it matches historical
+precedent, while the human scorer additionally penalized generic
+"DM us your details" replies that didn't engage a case's specific
+complexity, even when well-grounded. Full breakdown, including why
+tone's near-zero Pearson correlation is a low-variance artifact and not
+a real disagreement, in `DECISION_LOG.md`.
+
+**A real bug was found and fixed along the way**, worth calling out
+because catching it is itself part of what this phase is for:
+`golden_predictions.jsonl` only stores `{case_id, similarity}` per
+retrieved case (not the actual message/response text), and the first
+judge run — plus the first human-scoring pass — were both silently
+scoring groundedness against evidence with the content stripped out. It
+was caught because the resulting agreement numbers were implausibly bad
+(some near-zero or negative correlations), not by inspection — reading
+the LLM's own justifications turned up lines like *"the provided
+evidence contains no information"* for cases whose evidence was
+genuinely strong. Fixed via `src/retrieval/index.load_case_metadata_by_id()`
+and both the judge run and human-scoring pass were redone from scratch.
+
+### Failure analysis (Phase 15)
+
+`docs/failure_analysis.md` — five real failures mined directly from
+Phase 8/9/10/13's already-collected outputs, no manufactured examples.
+Four of the five are escalation-rule gaps (the dominant failure category
+by volume); the fifth is the corrupted-multi-part-tweet-evidence pattern
+first found in Phase 10, confirmed recurring by a second real instance
+found during Phase 14's human-scoring pass — alongside a positive
+counter-example where the generator successfully stitched fragmented
+evidence into a coherent reply instead of reproducing a fragment, and one
+explicit self-correction where an earlier claim (made before the Phase
+14 evidence bug was fixed) turned out to be wrong once the real evidence
+was visible.
 
 ## Running tests
 

@@ -1,0 +1,152 @@
+{
+  "n_examples": 30,
+  "per_dimension": {
+    "correctness": {
+      "exact_match_rate": 0.3333333333333333,
+      "within_one_point_rate": 0.7333333333333333,
+      "mean_absolute_difference": 0.9333333333333333,
+      "pearson_correlation": 0.440819998515906
+    },
+    "groundedness": {
+      "exact_match_rate": 0.7333333333333333,
+      "within_one_point_rate": 0.9333333333333333,
+      "mean_absolute_difference": 0.3333333333333333,
+      "pearson_correlation": 0.24712724192549754
+    },
+    "helpfulness": {
+      "exact_match_rate": 0.23333333333333334,
+      "within_one_point_rate": 0.7333333333333333,
+      "mean_absolute_difference": 1.0333333333333334,
+      "pearson_correlation": 0.477086302033051
+    },
+    "tone": {
+      "exact_match_rate": 0.4,
+      "within_one_point_rate": 1.0,
+      "mean_absolute_difference": 0.6,
+      "pearson_correlation": 0.08168829722167237
+    },
+    "no_hallucination": {
+      "exact_match_rate": 0.9,
+      "within_one_point_rate": 0.9666666666666667,
+      "mean_absolute_difference": 0.13333333333333333,
+      "pearson_correlation": 0.5570860145311556
+    }
+  },
+  "n_disagreements": 19,
+  "disagreements": [
+    {
+      "id": "gold_0282",
+      "dimension": "correctness",
+      "human_score": 3,
+      "llm_score": 1
+    },
+    {
+      "id": "gold_0282",
+      "dimension": "helpfulness",
+      "human_score": 3,
+      "llm_score": 1
+    },
+    {
+      "id": "gold_0046",
+      "dimension": "correctness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0046",
+      "dimension": "helpfulness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0253",
+      "dimension": "helpfulness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0018",
+      "dimension": "correctness",
+      "human_score": 5,
+      "llm_score": 3
+    },
+    {
+      "id": "gold_0047",
+      "dimension": "correctness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0047",
+      "dimension": "helpfulness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0108",
+      "dimension": "correctness",
+      "human_score": 5,
+      "llm_score": 3
+    },
+    {
+      "id": "gold_0108",
+      "dimension": "helpfulness",
+      "human_score": 4,
+      "llm_score": 2
+    },
+    {
+      "id": "gold_0243",
+      "dimension": "correctness",
+      "human_score": 4,
+      "llm_score": 2
+    },
+    {
+      "id": "gold_0089",
+      "dimension": "groundedness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0176",
+      "dimension": "groundedness",
+      "human_score": 4,
+      "llm_score": 2
+    },
+    {
+      "id": "gold_0176",
+      "dimension": "no_hallucination",
+      "human_score": 4,
+      "llm_score": 2
+    },
+    {
+      "id": "gold_0076",
+      "dimension": "correctness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0076",
+      "dimension": "helpfulness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0262",
+      "dimension": "correctness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0262",
+      "dimension": "helpfulness",
+      "human_score": 3,
+      "llm_score": 5
+    },
+    {
+      "id": "gold_0151",
+      "dimension": "helpfulness",
+      "human_score": 3,
+      "llm_score": 5
+    }
+  ]
+}

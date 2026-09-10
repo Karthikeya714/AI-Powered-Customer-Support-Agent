@@ -56,3 +56,14 @@ def load_index(index_dir: Path = DEFAULT_INDEX_DIR) -> tuple[faiss.Index, list[d
     if index.ntotal != len(metadata):
         raise ValueError(f"Index/metadata mismatch: {index.ntotal} vectors vs {len(metadata)} metadata rows")
     return index, metadata
+
+
+def load_case_metadata_by_id(index_dir: Path = DEFAULT_INDEX_DIR) -> dict[str, dict]:
+    """case_id -> {customer_message, brand_response, ...} lookup, without
+    loading the FAISS index itself — for enriching a {case_id, similarity}
+    pair (e.g. from a saved prediction file) back into full evidence text."""
+    metadata = []
+    with (index_dir / "knowledge_metadata.jsonl").open(encoding="utf-8") as f:
+        for line in f:
+            metadata.append(json.loads(line))
+    return {row["case_id"]: row for row in metadata}
