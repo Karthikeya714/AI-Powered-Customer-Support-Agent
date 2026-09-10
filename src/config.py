@@ -33,6 +33,7 @@ class Settings:
     # LLM
     llm_api_key: str | None = os.getenv("LLM_API_KEY") or None
     llm_model: str = os.getenv("LLM_MODEL", "claude-sonnet-5")
+    llm_fallback_model: str | None = os.getenv("LLM_FALLBACK_MODEL") or None
 
     # Embeddings
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")

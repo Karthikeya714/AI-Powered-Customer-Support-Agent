@@ -41,8 +41,8 @@ st.caption(
     "connected to real Twitter/X."
 )
 
-example_choice = st.selectbox("Try an example, or write your own message below:", list(EXAMPLE_MESSAGES.keys()))
-message = st.text_area("Customer message", value=EXAMPLE_MESSAGES[example_choice], height=80)
+example_choice = st.selectbox("Optionally pick a built-in example to load below:", list(EXAMPLE_MESSAGES.keys()))
+message = st.text_area("Customer message (edit or replace the text here)", value=EXAMPLE_MESSAGES[example_choice], height=80)
 
 analyze_clicked = st.button("Analyze", type="primary")
 
@@ -58,6 +58,8 @@ elif analyze_clicked:
     col1, col2 = st.columns(2)
     col1.metric("Intent", result["intent"]["label"])
     col2.metric("Confidence", f"{result['intent']['confidence']:.2f}")
+    if result["intent"]["model"]:
+        st.caption(f"Classified by: {result['intent']['model']}")
 
     st.subheader("Similar historical cases")
     if result["retrieved_cases"]:
@@ -77,6 +79,8 @@ elif analyze_clicked:
             st.caption(f"Grounded in: {', '.join(result['evidence_ids'])}")
         if result["grounding_note"]:
             st.caption(result["grounding_note"])
+        if result["generation_model"]:
+            st.caption(f"Drafted by: {result['generation_model']}")
     else:
         st.write("*(no draft — escalated before generation was attempted)*")
 

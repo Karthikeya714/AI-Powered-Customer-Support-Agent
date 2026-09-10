@@ -72,9 +72,10 @@ class SupportAgent:
 
         return {
             "customer_message": customer_message,
-            "intent": {"label": intent, "confidence": confidence},
+            "intent": {"label": intent, "confidence": confidence, "model": intent_result.get("model")},
             "retrieved_cases": [{"case_id": c["case_id"], "similarity": c["similarity"]} for c in retrieved_cases],
             "draft_reply": draft_reply,
+            "generation_model": gen_result.get("model") if pre_decision["decision"] == "AUTO_HANDLE" else None,
             "evidence_ids": evidence_ids,
             "grounding_note": grounding_note,
             "decision": {"action": final_decision["decision"], "reason": final_decision["reason"]},

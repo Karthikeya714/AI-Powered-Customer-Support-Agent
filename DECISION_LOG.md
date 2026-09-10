@@ -2,7 +2,7 @@
 
 Non-obvious engineering decisions made throughout the project, in
 chronological order. Each entry: decision, reason, alternatives considered,
-trade-off. 47 entries — well beyond the plan's suggested 10-15, because
+trade-off. 48 entries — well beyond the plan's suggested 10-15, because
 entries were written as each phase happened rather than curated
 after the fact; the index below exists so a specific decision can be
 found without reading linearly.
@@ -45,6 +45,7 @@ found without reading linearly.
 - **Phase 16** (misleading headline number): four quantified corrections
 - **Phase 17** (this audit): top_k=5, multi-turn context, evaluation-metric choices, RAG-vs-fine-tuning, FAISS choice
 - **Phase 18** (Streamlit demo): thin UI over the existing agent, deliberately minimal, CLI remains the source of truth
+- **Post-Phase-18 hardening** (user-requested): automatic primary/fallback LLM model switching, added after hitting the same daily quota wall a second time
 
 ---
 
@@ -1719,3 +1720,69 @@ coverage (Phase 12), and the file's own logic is thin enough (display
 formatting, no branching business logic) that a live HTTP smoke check
 was judged sufficient verification rather than warranting mocked
 Streamlit test infrastructure.
+
+## 2026-09-10 — Automatic primary/fallback LLM model switching, added after hitting the same daily quota wall a second time
+
+**Decision:** `IntentClassifier` and `ReplyGenerator` now try a primary
+model (`settings.llm_model`) first; if it exhausts all `MAX_RETRIES`
+attempts, they immediately retry the same request against a second model
+(`settings.llm_fallback_model`, new `LLM_FALLBACK_MODEL` env var) with a
+fresh retry budget, before giving up. Both `_predict_with_model` /
+`_generate_with_model` now take an explicit `model` argument rather than
+reading `self.model`, so the same retry logic runs unchanged against
+whichever model is currently being tried. `.env` is set to
+`LLM_MODEL=gemini-3.5-flash-lite` / `LLM_FALLBACK_MODEL=gemini-3.1-flash-lite`
+— the same two models already used elsewhere in this project (Phase
+8/10's classifier/generator; Phase 14's judge run on the `3.1` variant
+specifically because `3.5` was already exhausted that day).
+
+**Reason:** This project hit `gemini-3.5-flash-lite`'s free-tier 500
+requests/day cap twice on the same day in two different contexts (Phase
+14's judge run, then again during this session's live Streamlit/CLI
+testing) — each time requiring a manual `.env` edit and full process
+restart to recover. That's an acceptable one-off during development but
+not something a deployed agent should require a human to notice and fix
+by hand; a live customer-support agent hitting a quota wall mid-shift
+needs to keep serving requests, not silently fail every message until
+someone notices logs and edits config. Falling back to a second model
+under the same account requires no new credentials and no architecture
+change — just trying a second known-good model name before giving up.
+
+**Alternatives considered:** A full N-model fallback chain configured as
+a list — rejected as more configuration surface than this project's scale
+needs; a single named fallback covers the actual failure mode observed
+(one model's daily quota exhausted) without speculative generality for
+providers/models never used here. A circuit breaker that stops calling a
+model after repeated failures within a time window (avoiding wasted
+retry-then-fallback latency on every single request once a model is known
+to be down) — explicitly deferred as a "what we'd do with one more week"
+item (see `docs/misleading_headline_number.md`-style self-critique
+sections of the final report): worth doing for a real production
+deployment, but adds real state-management complexity for a
+research-prototype scope, and the current per-request fallback already
+fixes the actual observed failure (an agent that silently degrades to
+`UNKNOWN`/escalate-everything for the rest of the day).
+
+**Trade-off:** A request that hits an exhausted primary model now takes
+noticeably longer to fail over (up to 3 retries' worth of backoff on the
+dead model, ~1-2 minutes with the existing 429 backoff schedule, before
+the fallback model is even tried) rather than detecting "this model is
+currently dead" once and skipping straight to the fallback for subsequent
+requests. Accepted for now — see the circuit-breaker note above — because
+it's a latency cost, not a correctness or safety cost: the pipeline never
+serves a wrong answer while failing over, and once the fallback succeeds
+the reply is exactly as grounded/evaluated as any other. Verified live,
+not just mocked: with `gemini-3.5-flash-lite` still quota-exhausted from
+earlier testing, `python -m src.agent "I forgot my password and can't log
+in"` was run end-to-end and its logs show both `IntentClassifier` and
+`ReplyGenerator` independently exhausting 3 retries on the primary (same
+429 quota error each time), logging "falling back to
+gemini-3.1-flash-lite", and then completing successfully — final output
+correctly classified (`account_access_issue`, confidence 1.0) with a
+grounded draft reply and an `AUTO_HANDLE` decision. Every prediction now
+also records which model actually served it (`result["model"]`, surfaced
+through `SupportAgent.handle()` as `intent.model` / `generation_model`,
+and shown in the Streamlit demo) — covered by the new mocked unit tests
+(`test_predict_falls_back_to_second_model_when_primary_exhausted` and its
+generator equivalent) rather than re-verified in this specific live run,
+since the live run predates that field being added.

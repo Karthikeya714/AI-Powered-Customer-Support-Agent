@@ -67,22 +67,40 @@ SYSTEM_PROMPT = _build_system_prompt()
 
 REQUEST_TIMEOUT_MS = 30_000  # without this, a dropped connection hangs forever instead of raising
 
+_UNSET = object()  # sentinel so callers can pass fallback_model=None to explicitly disable it,
+                    # distinct from "not specified, use settings.llm_fallback_model"
+
 
 class IntentClassifier:
-    def __init__(self, api_key: str | None = None, model: str | None = None):
+    def __init__(self, api_key: str | None = None, model: str | None = None, fallback_model=_UNSET):
         self.model = model or settings.llm_model
+        self.fallback_model = settings.llm_fallback_model if fallback_model is _UNSET else fallback_model
         self.client = genai.Client(api_key=api_key or settings.llm_api_key, http_options={"timeout": REQUEST_TIMEOUT_MS})
 
     def predict(self, customer_message: str) -> dict:
         """Returns a dict with intent/confidence/reasoning on success, or
         intent=None and a populated "error" on failure — callers must
         handle both (fail safely, never crash the pipeline on bad LLM output).
+
+        Tries self.model first; if it exhausts all retries (e.g. its daily
+        quota is exhausted), falls back to self.fallback_model with a fresh
+        retry budget, when one is configured and differs from the primary.
         """
+        result = self._predict_with_model(self.model, customer_message)
+        if result["error"] is not None and self.fallback_model and self.fallback_model != self.model:
+            logger.warning(
+                "Primary model %s exhausted retries (%s); falling back to %s",
+                self.model, result["error"], self.fallback_model,
+            )
+            result = self._predict_with_model(self.fallback_model, customer_message)
+        return result
+
+    def _predict_with_model(self, model: str, customer_message: str) -> dict:
         last_error: str | None = None
         for attempt in range(1, MAX_RETRIES + 1):
             try:
                 interaction = self.client.interactions.create(
-                    model=self.model,
+                    model=model,
                     system_instruction=SYSTEM_PROMPT,
                     input=customer_message,
                     response_format={
@@ -100,15 +118,16 @@ class IntentClassifier:
                     "confidence": parsed.confidence,
                     "reasoning": parsed.reasoning,
                     "raw_response": interaction.output_text,
+                    "model": model,
                     "error": None,
                 }
             except (RuntimeError, ValidationError, ValueError) as e:
                 last_error = str(e)
-                logger.warning("Classification attempt %d/%d failed: %s", attempt, MAX_RETRIES, last_error)
+                logger.warning("Classification attempt %d/%d (%s) failed: %s", attempt, MAX_RETRIES, model, last_error)
                 backoff = RETRY_BACKOFF_SECONDS * attempt
             except Exception as e:  # network/rate-limit/transient API errors
                 last_error = str(e)
-                logger.warning("Classification attempt %d/%d raised %s: %s", attempt, MAX_RETRIES, type(e).__name__, last_error)
+                logger.warning("Classification attempt %d/%d (%s) raised %s: %s", attempt, MAX_RETRIES, model, type(e).__name__, last_error)
                 if getattr(e, "status_code", None) == 429 or getattr(e, "code", None) == 429:
                     match = _RETRY_AFTER_RE.search(last_error)
                     backoff = min(float(match.group(1)) + 2.0, RATE_LIMIT_MAX_BACKOFF_SECONDS) if match else RATE_LIMIT_DEFAULT_BACKOFF_SECONDS
@@ -119,8 +138,8 @@ class IntentClassifier:
                 logger.info("Retrying in %.1fs", backoff)
                 time.sleep(backoff)
 
-        logger.error("Classification failed after %d attempts: %s", MAX_RETRIES, last_error)
-        return {"intent": None, "confidence": 0.0, "reasoning": None, "raw_response": None, "error": last_error}
+        logger.error("Classification failed after %d attempts on %s: %s", MAX_RETRIES, model, last_error)
+        return {"intent": None, "confidence": 0.0, "reasoning": None, "raw_response": None, "model": model, "error": last_error}
 
 
 def _load_cache(cache_path) -> dict[str, dict]:

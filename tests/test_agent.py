@@ -42,7 +42,8 @@ def test_auto_handle_path_calls_generator_and_returns_draft():
     assert result["decision"]["action"] == "AUTO_HANDLE"
     assert result["draft_reply"] == "Sorry for the trouble, please DM us."
     assert result["evidence_ids"] == ["case_1"]
-    assert result["intent"] == {"label": "playback_technical_issue", "confidence": 0.95}
+    assert result["intent"]["label"] == "playback_technical_issue"
+    assert result["intent"]["confidence"] == 0.95
     assert result["retrieved_cases"] == [{"case_id": "case_1", "similarity": 0.9}]
     generator.generate.assert_called_once()
 
