@@ -1,0 +1,34 @@
+{
+  "labels": [
+    "AUTO_HANDLE",
+    "ESCALATE"
+  ],
+  "accuracy": 0.6026200873362445,
+  "per_label": {
+    "AUTO_HANDLE": {
+      "precision": 0.5976331360946746,
+      "recall": 0.8145161290322581,
+      "f1": 0.689419795221843,
+      "support": 124
+    },
+    "ESCALATE": {
+      "precision": 0.6166666666666667,
+      "recall": 0.3523809523809524,
+      "f1": 0.4484848484848485,
+      "support": 105
+    }
+  },
+  "confusion_matrix": {
+    "AUTO_HANDLE": {
+      "AUTO_HANDLE": 101,
+      "ESCALATE": 23
+    },
+    "ESCALATE": {
+      "AUTO_HANDLE": 68,
+      "ESCALATE": 37
+    }
+  },
+  "false_auto_handle_rate": 0.6476190476190476,
+  "false_escalation_rate": 0.18548387096774194,
+  "n_examples": 229
+}

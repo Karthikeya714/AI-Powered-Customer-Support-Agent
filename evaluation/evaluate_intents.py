@@ -42,11 +42,12 @@ def plot_confusion_matrix(metrics: dict, output_path: Path, title: str) -> None:
     labels = metrics["labels"]
     cm = np.array([[metrics["confusion_matrix"][true][pred] for pred in labels] for true in labels])
 
-    fig, ax = plt.subplots(figsize=(1 + 0.6 * len(labels), 1 + 0.6 * len(labels)))
+    side = max(4.0, 1 + 0.6 * len(labels))  # a small label count (e.g. escalation's 2x2) still needs a readable minimum size
+    fig, ax = plt.subplots(figsize=(side, side))
     im = ax.imshow(cm, cmap="Blues")
     ax.set_xticks(range(len(labels)))
     ax.set_yticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=90)
+    ax.set_xticklabels(labels, rotation=45 if len(labels) <= 4 else 90, ha="right" if len(labels) <= 4 else "center")
     ax.set_yticklabels(labels)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Actual")

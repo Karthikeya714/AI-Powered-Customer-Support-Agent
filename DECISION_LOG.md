@@ -1064,3 +1064,127 @@ reason citing *two* independent signals at once (high-risk intent AND
 retrieval similarity 0.65 below the 0.70 threshold) — confirming the
 `reason` string correctly aggregates multiple simultaneous signals, not
 just the first one found.
+
+## 2026-09-10 — Evaluation harness reuses Phase 8's classifier predictions instead of re-classifying
+
+**Decision:** `evaluation/run_evaluation.py` loads
+`artifacts/predictions/ai_classifier_predictions.jsonl` (Phase 8's
+already-computed result for all 229 golden examples) for
+`predicted_intent`/`confidence`, rather than calling
+`IntentClassifier.predict()` again for each example. Retrieval runs fresh
+(free/local). Generation is a genuinely new call, made only when the
+pre-check doesn't already call for escalation — the same two-stage design
+`SupportAgent` uses (Phase 12), for the same reason.
+
+**Reason:** It's the exact same model, exact same prompt, exact same
+golden-set inputs as Phase 8 — a second live classification pass would
+spend real API quota reproducing a number Phase 8 already measured and
+saved, not adding new information. Given this project's demonstrated
+sensitivity to free-tier quota limits (documented at length above),
+avoiding a redundant ~229-call pass that produces no new signal is a
+clear win, and this halves the size of Phase 13's live run.
+
+**Why this doesn't compromise "evaluate the complete pipeline":** the
+logical pipeline (classify → retrieve → generate → decide) is still
+fully exercised end-to-end — the classify step's *output* is sourced from
+an already-completed, correctly-computed run of that exact step against
+these exact inputs, not skipped or faked. This is a cache-reuse decision,
+identical in spirit to the classifier's own raw-prediction cache
+(`ai_classifier_raw_cache.jsonl`) or `scripts/generate_replies.py`
+resuming from cache — reusing a valid, already-computed result is not the
+same as not computing it.
+
+**Alternatives considered:** Building `evaluation/run_evaluation.py`
+around `SupportAgent.handle()` directly (simpler code, one obvious call
+per golden example) — rejected specifically because `SupportAgent`
+doesn't currently support injecting a precomputed intent, and adding that
+capability to its clean single-purpose interface (a real production agent
+receiving a genuinely new message) for an evaluation-only optimization
+would complicate the more important interface for a benefit that only
+matters here. Instead, `run_evaluation.py` composes the same underlying
+modules (`Retriever`, `ReplyGenerator`, `decide`) directly.
+
+**Trade-off:** `intent_metrics.json` from this harness is *identical* in
+substance to Phase 8's own `ai_classifier_metrics.json` (same
+predictions, recomputed) — clearly labeled with a `"note"` field
+explaining the reuse, so it isn't mistaken for independent
+re-verification. The genuinely new numbers from this phase are the
+escalation metrics and the full-pipeline predictions file.
+
+## 2026-09-10 — Phase 13 result: escalation accuracy is only 60.3%, with a 64.8% false auto-handle rate — and this was NOT patched after seeing it
+
+**Result:** Intent metrics match Phase 8 exactly (84.7% accuracy, 0.846
+macro F1 — expected, reused predictions). **Escalation accuracy is only
+60.3%**, well below intent accuracy, with:
+
+- AUTO_HANDLE: precision 0.598, recall 0.815, F1 0.689 (support 124)
+- ESCALATE: precision 0.617, recall 0.352, F1 0.448 (support 105)
+- **False auto-handle rate (the dangerous error): 64.8%** — of the 105
+  golden examples correctly labeled `ESCALATE`, the system dangerously
+  auto-handled 68 of them.
+- False escalation rate (the conservative error): 18.5%.
+
+This is the headline finding of this phase, and it's a bad number, stated
+plainly rather than buried under the much better-looking intent accuracy.
+
+**Root cause, investigated (not just observed):** breaking down the 68
+false auto-handles by `gold_intent` —
+`billing_subscription_issue` (15), `account_data_loss` (12),
+`cancellation_or_refund_request` (10), `account_access_issue` (7), and a
+long tail — confirms exactly the gap flagged as a known risk in Phase
+11's decision log: `HIGH_RISK_INTENTS` contains only
+`account_security_compromise` (1 of its 19 golden cases was still missed
+— the classifier occasionally predicts a different intent for it). The
+two intents Phase 11 explicitly declined to hard-code as always-escalate
+(`account_data_loss`, `cancellation_or_refund_request`) alone account for
+22 of the 68 errors. Spot-checking individual examples surfaces two
+further gaps: (1) real repeated-complaint language the regex doesn't
+match — e.g. `gold_0023`: *"26 Sept I reported a bug, what's the status?
+I still can't drag..."* has no "again"/"repeatedly"/ordinal-number
+pattern for `_REPEATED_COMPLAINT_RE` to catch; (2) compound signals like
+`gold_0041`: *"...cannot access account (Still Being Charged)"*, where
+the financial-harm nuance (locked out **and** being charged) isn't
+represented by any single rule.
+
+**Decision: do not patch `src/escalation/decision.py` based on this
+finding.** The temptation is obvious — the fix looks easy (add two
+intents to `HIGH_RISK_INTENTS`, extend the regex) and the failing cases
+are sitting right here. Doing that anyway would mean tuning escalation
+rules directly against the golden set's `gold_action` labels, which is
+exactly the leakage the plan explicitly warns against ("tune using
+validation data, not the golden set") and which every earlier threshold
+decision in this project (Phase 11's `MIN_RETRIEVAL_SIMILARITY`
+calibration) was deliberately structured to avoid. A rule added because
+it fixes `gold_0023` specifically is fit to this golden set, not a
+general improvement — the two intents Phase 11 already reasoned through
+and declined to hard-code (because the golden rubric escalates them
+*conditionally*, not always) would become cruder, not better, by being
+force-added now just because the golden set makes the cost of that
+crudeness visible.
+
+**What the honest path forward looks like instead** (a strong Phase 19
+"one more week" candidate, not done now): build a genuine held-out
+escalation-labeled validation set — analogous to the retrieval-similarity
+calibration sample, drawn from `golden_pool` cases outside `golden_set`
+— and use *that* to decide whether `account_data_loss` /
+`cancellation_or_refund_request` warrant hard-coded high-risk status, and
+to design a better repeated-complaint detector than a hand-written regex
+(e.g. checking whether the retrieved cases' own historical resolutions
+disagree, an approximation of the plan's "conflicting historical
+resolutions" signal that Phase 11 didn't implement).
+
+**Why this matters for the project's own "misleading headline number"
+question (Phase 16):** "our intent classifier achieves 84.7% accuracy" is
+the number that looks good in isolation. The number that actually
+predicts whether this system is safe to deploy — whether it correctly
+recognizes when *not* to auto-respond — is 60.3%, with a 64.8% rate of
+the specifically dangerous error. Reporting only the first number would
+be a textbook example of the exact problem Phase 16 asks this project to
+interrogate in its own results.
+
+**Also fixed in this phase:** `evaluation/evaluate_intents.py`'s
+confusion-matrix plotting sized figures using a formula tuned for the
+12-label intent matrix (`1 + 0.6 * n_labels`), which produced an
+unreadably tiny, overlapping 2x2 plot for the escalation confusion
+matrix. Given a `max(4.0, ...)` floor and softened label rotation for
+small label counts.

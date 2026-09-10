@@ -10,12 +10,12 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 through Phase 12 complete (setup, dataset inspection,
+**Status:** Phase 0 through Phase 13 complete (setup, dataset inspection,
 brand selection, data cleaning, intent discovery, golden set, majority
 baseline, TF-IDF baseline, AI intent classifier, historical case
-retrieval, grounded reply generation, escalation decision, and the
-integrated agent). Later sections of this README (evaluation harness,
-LLM judge, failure analysis) will be filled in as each phase lands — see
+retrieval, grounded reply generation, escalation decision, the integrated
+agent, and the evaluation harness). Later sections of this README (LLM
+judge, failure analysis) will be filled in as each phase lands — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -372,6 +372,37 @@ Each dependency (classifier/retriever/generator) can be injected into
 (auto-handle, pre-check escalate with generation skipped, post-generation
 escalate on an ungrounded reply, classifier failure, retrieval failure)
 without making real API calls.
+
+### Evaluation harness (Phase 13)
+
+```bash
+python -m evaluation.run_evaluation
+```
+
+Runs the full pipeline (retrieve → maybe-generate → decide) over all 229
+golden examples and computes intent, retrieval, and escalation metrics
+together. Reuses Phase 8's classifier predictions rather than
+re-classifying (same model/prompt/inputs — see `DECISION_LOG.md`), so
+this run only spends new API calls on generation. Writes
+`artifacts/predictions/golden_predictions.jsonl` (full result per
+example) and `artifacts/metrics/{intent,escalation,retrieval}_metrics.json`.
+
+**Headline result:** intent accuracy 84.7% (same as Phase 8) — but
+**escalation accuracy is only 60.3%**, with a **64.8% false auto-handle
+rate** (of golden examples that should have escalated, the system
+dangerously auto-handled 65% of them). Root cause, verified by breaking
+down the errors by intent: `HIGH_RISK_INTENTS` (Phase 11) hard-codes only
+`account_security_compromise`; `account_data_loss` and
+`cancellation_or_refund_request` alone account for a third of the
+dangerous errors, plus real repeated-complaint language the regex safety
+net doesn't match. **This was deliberately not patched** — doing so would
+mean tuning escalation rules directly against `gold_action`, exactly the
+leakage the plan warns against. Full root-cause analysis and why this is
+being left for a proper validation-set-driven fix (not a golden-set
+patch) in `DECISION_LOG.md` — this is this project's own "what is
+misleading about my headline number" finding (Phase 16 material,
+surfacing here first): intent accuracy looks good in isolation; the
+number that actually predicts deployment safety does not.
 
 ## Running tests
 
