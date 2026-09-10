@@ -10,13 +10,13 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 (setup) through Phase 7 (TF-IDF + Logistic Regression
-baseline) complete, plus Phase 9 (historical case retrieval) — Phase 8 (AI
-intent classifier) is implemented and committed separately once its golden-set
-evaluation run finishes (see `DECISION_LOG.md`). Later sections of this
-README (results, reproduction steps) will be filled in as each phase
-lands — see `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the
-full phase plan and `DECISION_LOG.md` for engineering decisions.
+**Status:** Phase 0 through Phase 9 complete (setup, dataset inspection,
+brand selection, data cleaning, intent discovery, golden set, majority
+baseline, TF-IDF baseline, AI intent classifier, and historical case
+retrieval). Later sections of this README (results, reproduction steps)
+will be filled in as each phase lands — see
+`Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
+and `DECISION_LOG.md` for engineering decisions.
 
 ## Scope
 
@@ -219,6 +219,37 @@ intents' true examples mostly fall back to `account_access_issue` — the
 closest available trained category. Writes the same predictions/metrics/
 confusion-matrix-plot artifact triad as the majority baseline.
 
+### AI intent classifier (Phase 8)
+
+An LLM-based classifier (Google Gemini's free tier — see `DECISION_LOG.md`
+for why Gemini rather than the originally-planned Claude), with output
+constrained to the 12 approved intent labels via a JSON schema enum (not
+just a prompt instruction — an out-of-vocabulary label fails schema
+validation):
+
+```bash
+python -m src.intents.classifier
+```
+
+**Result: 84.7% accuracy, 0.846 macro F1** — decisively beats both
+baselines, and correctly handles the 3 intents that structurally broke the
+TF-IDF baseline (zero weak-label training coverage):
+`account_security_compromise` (F1=0.973), `cancellation_or_refund_request`
+(F1=0.786), plus `student_discount_issue` (F1=0.971, included for
+contrast — this one *does* have weak-label coverage). Zero classification
+errors across all 229 calls. The remaining confusions
+(`artifacts/plots/ai_classifier_confusion_matrix.png`) concentrate on
+intent-boundary pairs I personally found genuinely ambiguous while
+hand-labeling the golden set (e.g. `cancellation_or_refund_request` vs
+`billing_subscription_issue`) — a good sign the errors reflect real
+taxonomy ambiguity, not noise. Full comparison:
+
+| Model | Accuracy | Macro F1 |
+|---|---:|---:|
+| Majority baseline | 12.2% | 0.018 |
+| TF-IDF + Logistic Regression | 56.8% | 0.511 |
+| **AI classifier (Gemini)** | **84.7%** | **0.846** |
+
 ### Retrieval (Phase 9)
 
 Build the FAISS vector index over knowledge-split cases (golden_pool is
@@ -259,6 +290,45 @@ similarity, entirely via semantic embedding similarity — retrieval is
 more robust to the labeling gap than the classifiers were, since it never
 depends on the weak-label taxonomy at all. See
 `artifacts/predictions/retrieval_examples.json` for the full example.
+
+### Grounded reply generation (Phase 10)
+
+```bash
+python -m scripts.generate_replies
+```
+
+Drafts a reply from the customer message + `gold_intent` (not a predicted
+intent — isolates reply-generation quality from classifier error; the full
+agent in Phase 12 chains the real predicted intent through instead) +
+top-5 retrieved cases. The LLM must not invent policies, amounts,
+deadlines, guarantees, or unverifiable account actions — if the evidence
+doesn't support a confident answer it sets `grounded: false` and writes a
+short honest holding reply instead. `evidence_ids` the model cites are
+filtered against the case_ids actually retrieved (a hallucinated citation
+is dropped, not trusted). Writes
+`artifacts/predictions/reply_generation_examples.json`.
+
+### Escalation decision (Phase 11)
+
+```python
+from src.escalation.decision import decide
+decide(customer_message, intent, intent_confidence, retrieved_cases, reply_grounded)
+# -> {"decision": "AUTO_HANDLE" | "ESCALATE", "reason": "..."}
+```
+
+A transparent rules engine, not a learned classifier — escalates on any of:
+low intent confidence, low retrieval similarity (or nothing retrieved), an
+ungrounded generated reply, a hard-coded high-risk intent
+(`account_security_compromise`), or two regex checks for repeated/
+unresolved-complaint and legal/sensitive language. `MIN_RETRIEVAL_SIMILARITY`
+was recalibrated from Phase 0's placeholder (0.5, which turned out to never
+fire) to 0.70 using `scripts/calibrate_escalation_thresholds.py` against a
+200-case validation sample drawn from `golden_pool` cases **not** in
+`golden_set` — never tuned against the golden set itself. See
+`DECISION_LOG.md` for the full calibration reasoning and the known gap
+(`account_data_loss`/`cancellation_or_refund_request` aren't hard-coded as
+always-escalate, since the golden-labeling rubric treats them
+conditionally, not unconditionally).
 
 ## Running tests
 

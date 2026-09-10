@@ -742,3 +742,224 @@ Documented explicitly in the README and here rather than left as an
 unexplained low number — an example of the project's own "misleading
 headline number" principle (Phase 16) showing up one intent-taxonomy layer
 below where it was first observed in Phase 7.
+
+## 2026-09-10 — Phase 10 written and tested while Phase 8's live run continued, but not executed until it finished
+
+**Decision:** `src/generation/reply_generator.py`, `src/generation/prompts.py`,
+and `scripts/generate_replies.py` were written and fully unit-tested (all
+mocked, zero live API calls) while Phase 8's golden-set classification run
+was still in progress, but `scripts/generate_replies.py` was not actually
+run against the live Gemini API until that run finished.
+
+**Reason:** Both Phase 8 and Phase 10 call the same Gemini free-tier
+account. Phase 8 had already been derailed once by a per-model quota limit
+that took real debugging time to diagnose (see the entries above); running
+a second, unrelated LLM workload concurrently against the same account
+risked pushing a still-unknown quota ceiling and stalling or breaking the
+in-progress Phase 8 run for no good reason. Writing and testing code has
+no such risk (no network calls), so that work proceeded in parallel;
+only the live-API step was deferred.
+
+**Alternatives considered:** Using a different model or waiting for a
+separate quota pool for generation — unnecessary; simply sequencing the
+two runs (finish classifying, then generate) avoids the risk entirely with
+no added complexity.
+
+**Trade-off:** None — this only affected timing/sequencing, not the
+final implementation.
+
+## 2026-09-10 — Reply generator uses gold_intent, not a predicted intent
+
+**Decision:** `scripts/generate_replies.py` passes each example's
+`gold_intent` (Phase 5's manually-verified label) into the generator, not
+a prediction from Phase 8's classifier.
+
+**Reason:** Phase 10 is about evaluating *reply-generation* quality in
+isolation. Feeding a predicted (possibly wrong) intent in would conflate
+two independent questions — "is the retrieved evidence used well?" and
+"did an upstream classification error cascade into a bad reply?" — into
+one number, making failures harder to attribute to the right component.
+Chaining the real predicted intent through retrieval and generation is
+explicitly the full agent's job (Phase 12), where that interaction is the
+point.
+
+**Alternatives considered:** Using Phase 8's predicted intent here too —
+deferred to Phase 12, not rejected outright; testing generation against
+ground-truth intent first establishes a cleaner baseline for "how good is
+generation when the rest of the pipeline is right," which Phase 12/13 can
+then compare against end-to-end performance.
+
+**Trade-off:** This means Phase 10's own results don't reflect
+classifier-error cascading — stated explicitly so it isn't mistaken for
+a full-pipeline evaluation.
+
+## 2026-09-10 — evidence_ids are filtered against retrieved case_ids, not trusted from the model
+
+**Decision:** After parsing the model's structured output,
+`ReplyGenerator.generate()` filters `evidence_ids` down to only the
+case_ids that were actually in the retrieved set passed into the prompt,
+dropping (and logging) any the model cited that weren't — rather than
+either trusting the model's citations outright or hard-failing the whole
+response over one bad citation.
+
+**Reason:** A citation to a case_id that was never shown to the model is a
+grounding violation — evidence traceability (the plan's explicit Phase 10
+success criterion: "a reviewer can trace important claims in the reply
+back to historical support evidence") breaks if `evidence_ids` can contain
+phantom references. Filtering rather than hard-failing keeps a
+still-useful reply from being discarded over what is usually a minor
+citation slip, not evidence the whole reply is unmoored from the retrieved
+cases.
+
+**Alternatives considered:** Constraining `evidence_ids` via a JSON schema
+enum, the same technique used for the intent classifier's label field —
+not possible here, since the valid case_ids differ per request (dynamic,
+not a fixed taxonomy), so schema-level enforcement doesn't apply the way
+it did for intents.
+
+**Trade-off:** A model that hallucinates evidence_ids fabricates evidence
+that then goes undetected in `grounded`/`grounding_note` — this is a real
+gap in the safety story. Mitigated for now by the prompt explicitly
+forbidding it, but this is stronger reason to check for hallucinated
+citations specifically during Phase 14/15 (LLM judge, failure analysis)
+rather than assuming the prompt instruction alone is sufficient.
+
+## 2026-09-10 — Phase 8 final result: AI classifier beats both baselines decisively
+
+**Decision:** Ship `gemini-3.5-flash-lite` as the Phase 8 intent
+classifier with no further tuning, based on its golden-set result.
+
+**Result:** 84.7% accuracy, 0.846 macro F1 on all 229 golden examples,
+zero classification errors (every call eventually succeeded — no
+`CLASSIFICATION_ERROR` fallbacks in the final predictions), versus 12.2%/
+0.018 (majority) and 56.8%/0.511 (TF-IDF+LogReg). The classifier clears
+the Phase 8 success criterion ("should beat at least the simple baseline")
+by a wide margin against *both* baselines, not just the trivial one.
+
+**Most notable finding:** the classifier correctly handles the 3 intents
+that structurally broke the TF-IDF baseline (zero weak-label training
+coverage in Phase 4's clustering-derived labels):
+`account_security_compromise` (F1=0.973), `student_discount_issue`
+(F1=0.971 — this one DOES have weak-label coverage, included for contrast),
+and `cancellation_or_refund_request` (F1=0.786). This confirms the
+hypothesis raised in the Phase 7 decision log: an LLM classifier isn't
+limited by which intents happened to form a clean unsupervised cluster,
+because it reasons from the intent *definitions* (`src/intents/labels.py`)
+directly rather than from cluster-derived pseudo-labels.
+
+**Remaining confusions are informative, not noise:** the confusion matrix
+(`artifacts/plots/ai_classifier_confusion_matrix.png`) shows most
+misclassifications landing on boundaries I *personally* found genuinely
+ambiguous while hand-labeling the golden set (Phase 5) — e.g.
+`cancellation_or_refund_request` vs `billing_subscription_issue` (6 of 17
+misses), and `playback_technical_issue` vs `account_data_loss`/
+`acknowledgment_closing`/`dm_followup` (8 of 28 misses). This is a good
+sign for the taxonomy: the errors concentrate on the same hard cases a
+human found hard, not on arbitrary confusions — worth revisiting directly
+in Phase 15 (failure analysis).
+
+**Alternatives considered:** Further prompt engineering or a larger model
+to push past 84.7% — not pursued now; the result already clears the
+success bar by a wide margin, and the remaining errors look like genuine
+taxonomy-boundary ambiguity rather than a fixable classifier weakness, so
+further tuning right now would likely just be fitting noise.
+
+**Trade-off:** None new here — see the two model-switching entries above
+for the trade-offs already accepted to reach this result.
+
+## 2026-09-10 — MIN_RETRIEVAL_SIMILARITY recalibrated from 0.5 to 0.70 on a real validation sample
+
+**Decision:** `MIN_RETRIEVAL_SIMILARITY` changed from Phase 0's placeholder
+default (0.5) to 0.70, based on `scripts/calibrate_escalation_thresholds.py`
+run against 200 `golden_pool` cases that are **not** in `golden_set.jsonl`.
+
+**Reason:** Phase 0 set 0.5 before any real embeddings existed to
+calibrate against — it was a guess. Once Phase 9's retriever existed, the
+real top-1 similarity distribution on the validation sample turned out to
+sit entirely above that guess (min 0.55, 1st percentile 0.61, median
+0.84) — meaning 0.5 would never fire on this embedding model/knowledge
+base, silently disabling that entire escalation signal. 0.70 corresponds
+to roughly the 10th percentile of the validation distribution: it flags
+the weakest ~10% of retrievals as low-confidence without swallowing most
+of the auto-handle-eligible cases.
+
+**Why a separate validation sample, not `golden_set` or the retrieval
+stats already computed in Phase 9:** the plan is explicit — "tune
+[thresholds] using validation data, not the golden set." Phase 9's
+`retrieval_stats.json` was computed by *querying* `golden_set` messages
+through the retriever; using that same score distribution to set a
+threshold would mean the threshold was indirectly informed by the golden
+set's own query text, even without touching its labels. Calibrating on a
+disjoint 200-case sample from the unused remainder of `golden_pool`
+(6,251 cases available after excluding the 229 already used) avoids that
+ambiguity entirely. This calibration step needed no LLM calls (retrieval
+is local/free), so it carried zero risk to Phase 8's in-flight run.
+
+**Alternatives considered:** Leaving 0.5 — rejected once shown to be
+non-functional; a threshold that never fires isn't "conservative", it's
+inert, and inert safety mechanisms are worse than none because they look
+like protection that isn't there. A higher percentile (25th, ≈0.77) —
+considered, but escalating a full quarter of otherwise-fine retrievals
+seemed too aggressive for a first calibration pass; 10th percentile is a
+defensible middle ground, revisitable once real escalation-outcome data
+exists (Phase 13 evaluation).
+
+**Trade-off:** `MIN_INTENT_CONFIDENCE` (0.6) was *not* recalibrated the
+same way — doing so would need classifier confidence scores on a
+validation sample, i.e. more Gemini API calls, which risked competing for
+quota with Phase 8's in-flight run (see the model-switching entries
+above). Left at its Phase 0 default for now, noted explicitly as
+unvalidated rather than silently presented as equally rigorous — a
+reasonable Phase 19 ("one more week") follow-up once quota headroom is
+less of a concern.
+
+## 2026-09-10 — Escalation signals: a small hard-coded high-risk-intent set, not a learned classifier
+
+**Decision:** `src/escalation/decision.py` escalates on five independent
+signals: (1) intent confidence below threshold, (2) top-1 retrieval
+similarity below threshold (or nothing retrieved), (3) the generated
+reply's own `grounded=False` judgment, (4) intent is in a small hard-coded
+`HIGH_RISK_INTENTS` set (currently just `account_security_compromise`),
+and (5) two regex checks over the raw customer message for repeated/
+unresolved-complaint language and legal/highly-sensitive language. Any one
+signal firing triggers `ESCALATE`; the `reason` string lists every signal
+that fired.
+
+**Reason:** This directly encodes the same policy used to hand-label the
+golden set's `gold_action` (`docs/golden_set_methodology.md`) as
+executable rules, rather than fitting a statistical model to reproduce
+those specific labels — the plan's "escalation is a feature, not a
+failure" principle is a stated business policy, not a pattern to be
+learned from data, and implementing it as transparent rules keeps the
+decision fully explainable (a project requirement: "code should be
+understandable enough to explain in a live interview").
+
+**Why this isn't circular/leaking despite mirroring the golden-labeling
+rubric:** the rules are general-purpose (any message can trigger the
+regexes; `HIGH_RISK_INTENTS` is a property of the intent taxonomy, not of
+any specific example) and were never fit *to* golden examples — no
+golden `gold_action` label was read or optimized against while writing
+this module. The two are consistent with each other by design (both
+implement the same stated policy), which is what internal consistency
+between labeling methodology and system behavior should look like, not a
+leakage problem.
+
+**Alternatives considered:** A single weighted risk score instead of
+independent OR'd signals — rejected as less explainable (harder to state
+"why did this escalate" in one sentence) and not obviously better;
+"conflicting historical resolutions" (a signal named in the plan) — not
+implemented, since detecting disagreement between retrieved cases'
+responses reliably would need real NLP work disproportionate to Phase
+11's scope; noted here as a known gap rather than silently skipped.
+
+**Trade-off:** `HIGH_RISK_INTENTS` currently contains only one intent.
+`account_data_loss` and `cancellation_or_refund_request` were deliberately
+left out despite frequently escalating in the golden labels — those two
+were escalated *conditionally* during labeling (e.g. lost playlists vs.
+lost downloads, informational cancel questions vs. explicit refund
+demands — see the golden-set methodology's action rubric), not
+unconditionally, so hard-coding them as always-escalate here would be
+cruder than the actual labeling policy. They rely on the confidence/
+similarity/grounding signals instead for now — a real limitation worth
+checking directly once Phase 13 runs this module against the full golden
+set.
