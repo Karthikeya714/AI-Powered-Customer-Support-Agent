@@ -2,7 +2,7 @@
 
 Non-obvious engineering decisions made throughout the project, in
 chronological order. Each entry: decision, reason, alternatives considered,
-trade-off. 46 entries — well beyond the plan's suggested 10-15, because
+trade-off. 47 entries — well beyond the plan's suggested 10-15, because
 entries were written as each phase happened rather than curated
 after the fact; the index below exists so a specific decision can be
 found without reading linearly.
@@ -44,6 +44,7 @@ found without reading linearly.
 - **Phase 15** (failure analysis): written with zero new API calls
 - **Phase 16** (misleading headline number): four quantified corrections
 - **Phase 17** (this audit): top_k=5, multi-turn context, evaluation-metric choices, RAG-vs-fine-tuning, FAISS choice
+- **Phase 18** (Streamlit demo): thin UI over the existing agent, deliberately minimal, CLI remains the source of truth
 
 ---
 
@@ -1674,3 +1675,47 @@ redundancy — deliberate, not accidental: Phase 13's headline finding is
 that the rule-based layer alone still has real gaps (68 false
 auto-handles), so relying on either layer alone would very likely have
 been measurably worse, not just theoretically riskier.
+
+## 2026-09-10 — Streamlit demo is a thin, deliberately minimal UI over the existing agent, not a new surface
+
+**Decision:** `app/streamlit_app.py` calls `SupportAgent.handle()`
+(Phase 12) directly and renders its existing output dict — intent,
+confidence, retrieved cases, draft reply, evidence IDs, grounding note,
+decision/reason. No new logic lives in the Streamlit file itself beyond
+display formatting and two hard-coded example messages (one expected
+AUTO_HANDLE case, one expected ESCALATE case) to make the demo usable
+without the reviewer having to invent a test message. Evidence display
+reuses Phase 14's `load_case_metadata_by_id()` helper to show full
+customer/brand text for each retrieved case rather than just
+`{case_id, similarity}` — the same enrichment step that fixed Phase 14's
+evidence-stripping bug, applied here for the same reason: raw
+`{case_id, similarity}` pairs are not useful to a human reader.
+
+**Reason:** The plan explicitly warns not to over-engineer the frontend,
+and the project's stated requirement is that core functionality stay
+usable without any UI at all — `src/agent.py`'s CLI
+(`python -m src.agent "message"`) is the source of truth, and the
+Streamlit app exists only to make a live walkthrough easier, not to
+duplicate or replace it. Verified the app actually serves working
+content (not just that the process starts) by running it in the
+background on a scratch port and fetching `http://localhost:<port>/`
+directly, since no browser tool is available in this environment; the
+response was valid Streamlit HTML, confirming no import-time or
+page-load error. The server was stopped immediately after — it was
+launched only for this verification, not meant to stay running.
+
+**Alternatives considered:** A multi-page app with separate
+classify/retrieve/generate/escalate views to mirror the pipeline stages
+— rejected as exactly the over-engineering the plan warns against for a
+component that exists purely to demo an already-tested pipeline, not to
+be a product. Re-implementing agent logic inline in the Streamlit file
+for a "simpler" single-file demo — rejected because it would create a
+second, untested code path that could silently drift from
+`SupportAgent`'s actual (fully-tested) behavior.
+
+**Trade-off:** No new automated tests were added for the Streamlit file
+itself — accepted because `SupportAgent.handle()` already has full test
+coverage (Phase 12), and the file's own logic is thin enough (display
+formatting, no branching business logic) that a live HTTP smoke check
+was judged sufficient verification rather than warranting mocked
+Streamlit test infrastructure.

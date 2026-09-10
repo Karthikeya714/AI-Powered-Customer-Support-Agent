@@ -15,8 +15,8 @@ faiss-cpu>=1.7
 # LLM client (Phase 8: intent classifier, using Google Gemini's free tier)
 google-genai>=0.3.0
 
-# Demo (added when Phase 18 is implemented)
-# streamlit>=1.30
+# Demo (Phase 18)
+streamlit>=1.30
 
 # Plotting
 matplotlib>=3.7

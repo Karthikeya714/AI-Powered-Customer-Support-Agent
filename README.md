@@ -10,14 +10,14 @@ This is a research/evaluation prototype, not a production system. No LLM is
 trained from scratch; the Twitter support history is used as retrieval
 knowledge, not training data for a new model.
 
-**Status:** Phase 0 through Phase 17 complete (setup, dataset inspection,
+**Status:** Phase 0 through Phase 18 complete (setup, dataset inspection,
 brand selection, data cleaning, intent discovery, golden set, majority
 baseline, TF-IDF baseline, AI intent classifier, historical case
 retrieval, grounded reply generation, escalation decision, the integrated
 agent, the evaluation harness, LLM-as-judge with human agreement, failure
-analysis, the "misleading headline number" self-critique, and a complete
-decision log). Later sections of this README (demo, final report) will be
-filled in as each phase lands — see
+analysis, the "misleading headline number" self-critique, a complete
+decision log, and a Streamlit demo). The final report (Phase 19) and
+reproducibility check (Phase 20) are still to come — see
 `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full phase plan
 and `DECISION_LOG.md` for engineering decisions.
 
@@ -482,6 +482,27 @@ hallucinate), golden-label uncertainty (checked via blind
 self-consistency only, not independent second-annotator agreement), and
 states data leakage as a **checked and cleared** concern, not an
 unresolved caveat.
+
+## Demo (Phase 18)
+
+A minimal Streamlit UI over the same agent the CLI uses — no separate
+logic, just a thin display layer over `SupportAgent.handle()` (Phase 12):
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Pick one of the two built-in examples (or write your own message), click
+Analyze, and it shows the predicted intent, retrieved historical cases
+(with full text), the drafted reply with its evidence citations, and the
+final AUTO_HANDLE/ESCALATE decision with reason.
+
+This is convenience only — the CLI remains the source of truth and needs
+no UI dependency:
+
+```bash
+python -m src.agent "My music keeps stopping every few seconds"
+```
 
 ## Running tests
 
