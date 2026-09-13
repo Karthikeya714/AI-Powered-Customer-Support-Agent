@@ -12,6 +12,16 @@ Usage:
 from __future__ import annotations
 
 import os
+import sys
+
+# Streamlit Community Cloud launches app/streamlit_app.py in a way that
+# doesn't put the repo root on sys.path (unlike `python -m streamlit run
+# ...` from the repo root, which does) - so a sibling top-level package
+# like `src` isn't importable by default. Add it explicitly, before any
+# `from src...` import below.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
 
 import streamlit as st
 
