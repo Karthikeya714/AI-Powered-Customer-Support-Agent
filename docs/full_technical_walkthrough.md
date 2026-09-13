@@ -514,10 +514,10 @@ See `Hiver_SDE_Intern_Project_Plan_for_Claude_Code.txt` for the full
 non-obvious choice made along the way (48 entries, indexed at the top of
 that file). Remaining work:
 
-- **Phase 19 — final report.** `REPORT.md` is currently still Phase 0's
-  placeholder. Most of its required content already exists, scattered
-  across this doc, `DECISION_LOG.md`, and `docs/*.md` — Phase 19 is
-  primarily consolidation, not new analysis.
+- **Phase 19 — final report.** Not yet written as a standalone document.
+  Most of its required content already exists, scattered across this
+  doc, `DECISION_LOG.md`, and `docs/*.md` — Phase 19 is primarily
+  consolidation, not new analysis.
 - **Phase 20 — reproducibility check.** Verifying a fresh clone can
   reproduce the headline results above in under 15 minutes, following
   exactly the [Run it](../README.md#run-it) and
