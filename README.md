@@ -1,5 +1,41 @@
 # Hiver SDE Intern — Brand-Specific AI Customer Support Agent
 
+## What is this, in plain English?
+
+Say a customer tweets Spotify's support account: *"I can't log into my
+account."* Today, a human reads that, figures out it's a login problem,
+checks how similar complaints were resolved before, and writes a reply.
+This project builds a prototype that automates the first few steps of
+that job:
+
+1. **Reads the message and figures out what kind of problem it is** —
+   login trouble, a billing question, a bug, a security concern, etc.
+2. **Searches through ~37,000 real historical Spotify support
+   conversations** to find ones that dealt with a similar problem.
+3. **Drafts a reply** based on how those similar cases were actually
+   handled — not by inventing an answer, but by grounding it in real
+   precedent.
+4. **Decides whether it's confident enough to send that reply on its
+   own, or whether a human should look at it first.**
+
+That last step is the point of the whole project. This isn't a chatbot
+that always answers — it's specifically designed to say *"a human should
+handle this"* when a case looks risky (account security, for example) or
+when there's no good historical precedent to draw on. Most of the effort
+here went into rigorously measuring **how well it makes that call**, not
+just whether its guesses are usually right — including a deliberate
+self-audit (see [Results at a glance](#results-at-a-glance) below) that
+finds and explains a real safety gap, rather than papering over it with
+a single impressive-looking accuracy number.
+
+Nothing here is trained from scratch. The historical support
+conversations are used the way a search engine uses documents —
+looked up and read at reply-time, never baked into a model's weights.
+See [Setup](#setup) to run it yourself, or [Demo](#demo-phase-18) for a
+point-and-click version.
+
+---
+
 Take-home assignment: build an offline prototype that takes a new customer
 support message and (1) classifies its intent, (2) retrieves similar
 historical support cases for one brand, (3) drafts a reply grounded in that
@@ -26,6 +62,7 @@ and `DECISION_LOG.md` for engineering decisions.
 ## Contents
 
 - [Results at a glance](#results-at-a-glance)
+- [Glossary](#glossary)
 - [Scope](#scope)
 - [Project layout](#project-layout)
 - [Setup](#setup)
@@ -64,6 +101,34 @@ that gap isn't noise. See
 [`docs/misleading_headline_number.md`](docs/misleading_headline_number.md)
 for four independently-quantified reasons the 84.7% headline overstates
 the system, computed against real project data rather than asserted.
+
+> **In plain terms:** out of every 100 customer messages that a human
+> would say should be escalated (account security, unresolved repeated
+> complaints, etc.), the system currently auto-answers roughly 65 of
+> them instead of handing them off. That's the real headline risk this
+> project surfaced — and it was deliberately *not* patched away once
+> found, because the honest fix requires new labeled data, not tweaking
+> the rules to pass the same examples used to catch the bug in the first
+> place (that would be [cheating by looking at the answer key](#glossary)
+> — see "data leakage" below).
+
+## Glossary
+
+Plain-English definitions for terms used throughout this README, for
+anyone not already familiar with this kind of system:
+
+| Term | Plain-English meaning |
+|---|---|
+| **Intent** | The category of problem a customer message represents — e.g. "can't log in" vs. "billing question" vs. "security concern." |
+| **RAG (retrieval-augmented generation)** | Instead of training a new model, look up relevant real examples at reply-time and use them to write a grounded answer — like a search engine feeding an AI writer, rather than the AI having "memorized" everything. |
+| **Embedding / vector search / FAISS** | A way to find "messages similar in meaning" rather than similar in exact wording — each message is converted to a list of numbers (an embedding) such that similar messages end up with similar numbers, and FAISS is the library used to search those numbers quickly. |
+| **Grounded reply / hallucination** | A "grounded" reply only makes claims actually backed by the retrieved historical cases. A "hallucination" is the opposite — the AI confidently stating something (a policy, a refund amount) that isn't actually supported by any real precedent. |
+| **Escalation** | The decision to hand a case to a human instead of letting the AI answer automatically — treated in this project as a *safety feature*, not a failure of the system. |
+| **Golden (evaluation) set** | 229 real customer messages, manually labeled by hand with the "correct" intent and escalation decision, used only to *measure* how well the system performs — never used to build or tune the system itself, so the score isn't inflated by the system having "seen the answers" (see "data leakage" below). |
+| **Data leakage** | When information from the evaluation set accidentally influences how the system was built or tuned, making its score look better than it would on truly new data — this project checks for and avoids this at every step (see `DECISION_LOG.md`). |
+| **Baseline** | A deliberately simple comparison method (e.g. "always guess the most common category") used to show how much better the real system is than doing something trivial. |
+| **LLM-as-judge** | Using a large language model to *score* the quality of another model's output (here, generated replies), as a cheaper substitute for having a human rate every single one — checked in this project against real human scoring to see how much it can be trusted. |
+| **Macro F1 / accuracy** | Standard ways of scoring a classifier. Accuracy is just "percent correct." Macro F1 additionally makes sure rare categories count as much as common ones, so a system can't get a good score just by nailing the common cases and ignoring rare ones. |
 
 ## Scope
 
@@ -547,6 +612,16 @@ Pick one of the two built-in examples (or write your own message), click
 Analyze, and it shows the predicted intent, retrieved historical cases
 (with full text), the drafted reply with its evidence citations, and the
 final AUTO_HANDLE/ESCALATE decision with reason.
+
+For example, given `"Unable to sign into Spotify"`:
+
+<p align="center">
+  <img src="docs/images/demo_intent_and_evidence.png" width="700" alt="Streamlit demo showing the classified intent (account_access_issue, confidence 1.00), which model served the request, and the retrieved similar historical cases">
+</p>
+
+<p align="center">
+  <img src="docs/images/demo_reply_and_decision.png" width="700" alt="Streamlit demo showing the grounded draft reply with its evidence citations, and the final AUTO_HANDLE decision with reason">
+</p>
 
 This is convenience only — the CLI remains the source of truth and needs
 no UI dependency:
