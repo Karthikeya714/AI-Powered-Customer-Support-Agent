@@ -25,10 +25,15 @@ data/raw/*
 data/processed/support_cases.jsonl
 data/processed/support_cases_with_intents.jsonl
 
-# Vector indexes and model artifacts (rebuildable, can be large)
+# Vector indexes and model artifacts (rebuildable, can be large). The
+# knowledge index specifically IS committed despite this section's general
+# rule - it's needed for the hosted Streamlit demo to run without requiring
+# a rebuild from the raw dataset (which isn't available on a cloud host).
 *.faiss
 *.index
-data/index/
+data/index/*
+!data/index/knowledge.faiss
+!data/index/knowledge_metadata.jsonl
 
 # LLM raw-prediction resumability caches (implementation detail, not a
 # phase deliverable — the corresponding *_predictions.jsonl file is the real output)

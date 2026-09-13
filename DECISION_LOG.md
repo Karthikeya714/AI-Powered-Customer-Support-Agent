@@ -1786,3 +1786,46 @@ and shown in the Streamlit demo) — covered by the new mocked unit tests
 (`test_predict_falls_back_to_second_model_when_primary_exhausted` and its
 generator equivalent) rather than re-verified in this specific live run,
 since the live run predates that field being added.
+
+## 2026-09-13 — The built FAISS index is committed to the repo, reversing Phase 9's "large derived data, don't commit" policy
+
+**Decision:** `data/index/knowledge.faiss` (54MB) and
+`data/index/knowledge_metadata.jsonl` (7.6MB) are now committed —
+`.gitignore` still excludes everything else under `data/index/` via
+`data/index/*`, with explicit `!` exceptions for just these two files.
+`app/streamlit_app.py` also now copies `st.secrets` into `os.environ`
+before importing `src.agent` (a no-op locally, where `src/config.py`'s
+own `load_dotenv(".env")` already populates the environment), so the
+same app file works unmodified whether run locally or deployed to
+Streamlit Community Cloud.
+
+**Reason:** Phase 9 deliberately gitignored the index as "large, derived,
+rebuildable" — correct for a repo whose only consumer clones it and runs
+`scripts.build_index` locally. That reasoning breaks once the goal
+becomes hosting the Streamlit demo publicly: Streamlit Community Cloud
+clones only what's in the git repo, has no access to the raw Kaggle
+dataset (516MB, license forbids redistribution) needed to rebuild
+`data/processed/support_cases.jsonl` and then the index from scratch,
+and has no pre/post-deploy hook to run a multi-step build pipeline
+before the app starts. Committing the already-built index is the only
+way a hosted instance can serve real retrieval results at all. Checked
+size first rather than assuming it would fit: 62MB combined, comfortably
+under GitHub's 100MB per-file hard limit.
+
+**Alternatives considered:** Git LFS for the index file — rejected as
+unnecessary complexity for a single 54MB file well under GitHub's plain
+limit, and it adds a dependency (LFS support) on whatever clones the
+repo next, including Streamlit Cloud's own git client. Rebuilding the
+index at Streamlit app startup from a committed `support_cases.jsonl` —
+rejected: still needs the embedding model downloaded and ~37k messages
+re-embedded on every cold start (slow, wasteful, and Streamlit Cloud
+free-tier compute is exactly where this would hurt most), when the
+already-computed result can just be committed once instead.
+
+**Trade-off:** The repo's size grows from ~2MB to ~64MB of git history,
+and this specific derived artifact must now be manually rebuilt and
+recommitted (`python -m scripts.build_index`, then `git add -f` past the
+`.gitignore` exclusion) if `knowledge.faiss` is ever regenerated from
+updated source data — an easy step to forget. Accepted because a hosted
+demo that doesn't work isn't a demo; a local-only contributor workflow
+was never the actual constraint here, hosting the live agent was.

@@ -11,7 +11,21 @@ Usage:
 
 from __future__ import annotations
 
+import os
+
 import streamlit as st
+
+# When hosted on Streamlit Community Cloud, config comes from its Secrets
+# manager (st.secrets), not a local .env file (which is gitignored and
+# never deployed). Copy secrets into os.environ *before* importing
+# src.agent, since that import chain evaluates src.config's Settings()
+# immediately via os.getenv() at import time. A no-op locally, where
+# src/config.py's own load_dotenv(".env") already populated os.environ.
+try:
+    for _key, _value in st.secrets.items():
+        os.environ.setdefault(_key, str(_value))
+except FileNotFoundError:
+    pass  # no secrets.toml - fine when running locally with a real .env
 
 from src.agent import SupportAgent
 from src.retrieval.index import load_case_metadata_by_id
